@@ -1,0 +1,8 @@
+node_modules/
+dist/
+# personal data / media - kabhi commit mat karna
+video/output/
+video/input/*
+!video/input/README.txt
+*.persona.json
+__pycache__/

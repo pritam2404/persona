@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<title>Persona - Guide</title>
+<style>
+  body { font-family: 'Segoe UI', 'Nirmala UI', sans-serif; color: #111827; max-width: 820px; margin: 0 auto; padding: 28px; line-height: 1.55; font-size: 14px; }
+  h1 { color: #4f46e5; margin: 0 0 4px; }
+  h2 { border-bottom: 2px solid #4f46e5; padding-bottom: 4px; margin-top: 28px; }
+  h3 { margin: 18px 0 6px; }
+  code, pre { background: #f3f4f6; border-radius: 4px; font-family: Consolas, monospace; font-size: 12.5px; }
+  code { padding: 1px 5px; }
+  pre { padding: 10px 12px; white-space: pre-wrap; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0; }
+  th, td { border: 1px solid #d1d5db; padding: 6px 8px; text-align: left; vertical-align: top; }
+  th { background: #eef2ff; }
+  .muted { color: #4b5563; }
+  .box { border-left: 4px solid #4f46e5; background: #eef2ff; padding: 8px 12px; margin: 10px 0; }
+  .warn { border-left-color: #b45309; background: #fffbeb; }
+  h2 { page-break-after: avoid; } table, pre, .box { page-break-inside: avoid; }
+</style>
+</head>
+<body>
+
+<h1>Persona</h1>
+<p class="muted">Daily tasks note karo → analyse → kal ka plan → AI coach video. Folder: <code>c:\Work\2026\BAU\projects\persona\</code></p>
+
+<h2>1. Ye kya karta hai</h2>
+<table>
+  <tr><th>Tab</th><th>Kaam</th></tr>
+  <tr><td><b>Aaj</b></td><td>Har task likho: naam, personal/office, category, start/end, socha kitna time, energy (1-5), ho gaya / adhoora / skip.</td></tr>
+  <tr><td><b>Analyse</b></td><td>7/14/30 din: time kahan gaya, energy kis ghante sabse zyada, estimate kitna galat hota hai, kya baar-baar skip hota hai. Har insight ke saath "Kyun" (data).</td></tr>
+  <tr><td><b>Kal</b></td><td>Kal ka suggested schedule, har item ke saath kaaran. Data kitne din ka hai uske hisaab se bharosa (kam / theek / achha).</td></tr>
+  <tr><td><b>Video</b></td><td>Coach script (Hindi/English) banata hai. Usse Python script awaaz + photo wala video banati hai.</td></tr>
+</table>
+
+<h2>2. Pehli baar chalana (laptop)</h2>
+<pre>cd c:\Work\2026\BAU\projects\persona
+npm install        (sirf pehli baar)
+npm run dev        (phir browser mein http://localhost:5173 kholo)</pre>
+<p>Try karne ke liye upar <b>Demo data</b> dabao: 10 din ka nakli data aata hai. <b>Demo hatao</b> se sirf demo wala hatta hai, tumhara asli data nahi.</p>
+
+<h2>3. Phone pe chalana</h2>
+<h3>Option A: Same WiFi (abhi turant)</h3>
+<pre>npm run phone</pre>
+<p>Terminal mein <code>Network: http://192.168.x.x:5173</code> dikhega. Phone ke browser mein wahi kholo.</p>
+<div class="box warn"><b>Dhyan do:</b> browser data address ke saath save karta hai. Laptop ka IP badla to phone pe purana data "gayab" dikhega (delete nahi hota, purane address pe pada rehta hai). Isliye har hafte <b>Export</b> karo.</div>
+<h3>Option B: Hamesha ke liye (recommended)</h3>
+<p><code>npm run build</code> se <code>dist\</code> folder banta hai. Usse GitHub Pages pe (free, https) daal do. Phir phone pe kholo → browser menu → <b>Add to Home screen</b>. App ki tarah khulega aur offline bhi chalega. Main ye step tumhare saath kar sakta hoon.</p>
+
+<h3>Phone + laptop ka data milana</h3>
+<p>Data sirf us device pe rehta hai (koi server nahi, privacy ke liye). Ek device pe <b>Export</b> → file doosre pe bhejo → wahan <b>Import</b>. Same task do baar nahi aata (id se match hota hai).</p>
+
+<h2>4. Video banana</h2>
+<h3>Step 1: Script</h3>
+<p>App → <b>Video</b> tab → naam + bhasha chuno → <b>Script download</b>. File ko <code>video\input\</code> mein rakho. Ek saaf photo bhi wahin rakho (saamne se, achhi light, sirf ek chehra).</p>
+<h3>Step 2: Awaaz + photo video (is PC pe, free)</h3>
+<pre>cd c:\Work\2026\BAU\projects\persona\video
+python -m pip install -r requirements.txt     (sirf pehli baar)
+python make_coach_video.py input\coach-2026-10-23.txt --photo input\face.jpg --lang hi</pre>
+<p>Output: <code>video\output\coach-2026-10-23\</code></p>
+<ul>
+  <li><code>coach.mp4</code>: 1080x1920 video, photo pe halka zoom, neeche Hindi captions, AI awaaz</li>
+  <li><code>voice.mp3</code>: sirf awaaz</li>
+  <li><code>face_square.png</code>: lip-sync tool ke liye photo ka crop</li>
+</ul>
+<p>Sample dekho: <code>video\output\sample-demo\coach.mp4</code> (demo data + nakli cartoon chehra).</p>
+<p>Male awaaz: <code>--voice hi-IN-MadhurNeural</code> ya <code>--voice en-IN-PrabhatNeural</code></p>
+
+<h3>Step 3: Realistic lip-sync (hoth hilna)</h3>
+<div class="box">Seedhi baat: ye step tumhare laptop pe nahi chalega. Lip-sync AI ko NVIDIA GPU chahiye, aur is PC mein sirf Intel graphics hai. Isliye Step 2 tak hum local karte hain, aur Step 3 bahar.</div>
+<table>
+  <tr><th>Raasta</th><th>Kaise</th><th>Fayda / nuksaan</th></tr>
+  <tr><td>Talking-photo website (jaise HeyGen, D-ID, Hedra)</td><td><code>face_square.png</code> + <code>voice.mp3</code> upload karo</td><td>Sabse aasaan, quality achhi. Free limit chhoti, aage paid. Photo unke server pe jaati hai, terms padh lena. Pricing badalti rehti hai, khud check karna.</td></tr>
+  <tr><td>Google Colab (free GPU) + open-source model (jaise LivePortrait, SadTalker)</td><td>Notebook mein photo + awaaz do, video download karo</td><td>Free, zyada control. Thoda technical, free GPU ki time limit hoti hai. Main notebook setup mein help kar sakta hoon.</td></tr>
+</table>
+<div class="box warn">
+<b>Photo ke rules:</b> sirf apni photo, ya AI-generated character jo kisi asli insaan jaisa na ho. Kisi aur ki photo bina permission ke mat lagana (deepfake). Script mein office tasks ke naam pehle se chhupe hain, edit karte waqt khud mat daalna.
+</div>
+
+<h2>5. Privacy - kya kahan jaata hai</h2>
+<table>
+  <tr><th>Data</th><th>Kahan rehta hai</th></tr>
+  <tr><td>Saare tasks</td><td>Sirf browser ka localStorage, us device pe. Kahin upload nahi.</td></tr>
+  <tr><td>Office task ke naam</td><td>App mein dikhte hain, par <b>video script mein kabhi nahi</b> ("office ka kaam" likha aata hai). Ye rule code mein hai aur test se check hota hai.</td></tr>
+  <tr><td>Private tick wale personal tasks</td><td>Script mein "ek nijee kaam"</td></tr>
+  <tr><td>Script text</td><td>Awaaz banane ke liye Microsoft ki free TTS service ko jaata hai (internet chahiye)</td></tr>
+  <tr><td>Photo</td><td>Step 2 tak sirf tumhare PC pe. Step 3 mein jo tool chuno, wahan.</td></tr>
+</table>
+<p class="muted">Office tasks ke naam generic rakho ("Audit queue", "Meeting") - title, customer, ya andar ki details personal device pe mat likho.</p>
+
+<h2>6. "Prediction" kaise kaam karta hai</h2>
+<ol>
+  <li>Aaj jo skip ya adhoora raha → kal pehle (carry-over).</li>
+  <li>Jo kaam 14 din mein 3+ alag din hua → routine, kal bhi.</li>
+  <li>Time = us kaam ka asli median time. Agar tumhare kaam estimate se 20%+ lambe chalte hain to carry-over mein buffer.</li>
+  <li>Focus kaam (Deep work, Study, Side project) → high-energy ghante (avg energy 3.5+).</li>
+  <li>Baaki khali jagah mein, kabhi overlap nahi.</li>
+</ol>
+<p><b>ML kyun nahi?</b> 30 din se kam data pe ML pattern nahi, noise seekhta hai. Simple rules jinka kaaran dikhe, abhi zyada sahi hain. 30+ din data ke baad ML add kar sakte hain. Interview mein ye bolna strong point hai.</p>
+
+<h2>7. Brain se data?</h2>
+<p>Aaj possible nahi: EEG headband sirf rough "focused / relaxed" signal dete hain, ye nahi ki tum kya kar rahe ho. Practical agla step: smartwatch / phone ka neend, steps, heart rate import karke energy se match karna. App ka data model isi ke liye extendable hai.</p>
+
+<h2>8. Code ka naksha (interview ke liye)</h2>
+<table>
+  <tr><th>File</th><th>Kya karti hai</th></tr>
+  <tr><td><code>src/lib/model.js</code></td><td>Task ka shape, validation, import/merge</td></tr>
+  <tr><td><code>src/lib/analyze.js</code></td><td>Summary, energy by hour, estimate bias, skip patterns, insights</td></tr>
+  <tr><td><code>src/lib/predict.js</code></td><td>Kal ka plan: carry-over + recurring + slot scheduling</td></tr>
+  <tr><td><code>src/lib/script.js</code></td><td>Coach script, privacy filter, Hindi/English</td></tr>
+  <tr><td><code>src/views/*.jsx</code></td><td>4 screens (React)</td></tr>
+  <tr><td><code>tests/logic.test.js</code></td><td>7 tests (<code>npm test</code>), privacy leak test bhi</td></tr>
+  <tr><td><code>video/make_coach_video.py</code></td><td>edge-tts awaaz + Edge se captions + ffmpeg video</td></tr>
+</table>
+<p><b>Interview story:</b> "Personal analytics PWA banaya - React, offline-first, data device pe. Prediction ko jaan-boojh ke explainable rules rakha kyunki data kam tha. Office data ke liye privacy rule code + test mein enforce kiya. Video pipeline mein Hindi captions toot rahe the (Pillow mein text-shaping library nahi thi) - browser se render karke fix kiya."</p>
+
+</body>
+</html>
