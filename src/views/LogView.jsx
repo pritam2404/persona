@@ -1,17 +1,31 @@
 import { useState } from 'react';
 import { CATEGORIES, normalizeTask, validateTask, mergeTasks } from '../lib/model.js';
 import { tasksOn, summarize } from '../lib/analyze.js';
-import { durationMin, fmtDuration, addDays } from '../lib/time.js';
+import { durationMin, fmtDuration, addDays, toMin } from '../lib/time.js';
 
 function nowHHMM() {
   const d = new Date();
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+function minusMin(hhmm, n) {
+  const [h, m] = hhmm.split(':').map(Number);
+  const t = (h * 60 + m - n + 1440) % 1440;
+  return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
+}
+
+/** Default: pichhla task jahan khatam hua wahan se, warna "abhi se 30 min pehle".
+ *  (Pehle default 09:00 tha -> raat ko save karne pe 14 ghante ka task ban jaata tha.) */
+function defaultStart(lastEnd, end) {
+  if (lastEnd && lastEnd < end && toMin(end) - toMin(lastEnd) <= 4 * 60) return lastEnd;
+  return minusMin(end, 30);
+}
+
 function emptyForm(day, lastEnd) {
+  const end = nowHHMM();
   return {
     id: '', date: day, title: '', area: 'personal', category: 'Other',
-    start: lastEnd || '09:00', end: nowHHMM(), estMin: '', energy: 3,
+    start: defaultStart(lastEnd, end), end, estMin: '', energy: 3,
     status: 'done', note: '', private: false,
   };
 }
@@ -42,6 +56,8 @@ export default function LogView({ tasks, setTasks, day, setDay, notify }) {
     const errs = validateTask(t);
     setErrors(errs);
     if (errs.length) return;
+    const mins = durationMin(t.start, t.end);
+    if (mins > 6 * 60 && !window.confirm(`Ye task ${fmtDuration(mins)} ka hai. Start/End sahi hai?`)) return;
     setTasks((prev) => mergeTasks(prev, [t]));
     notify(form.id ? 'Task update hua' : 'Task save hua');
     setForm(emptyForm(day, t.end));

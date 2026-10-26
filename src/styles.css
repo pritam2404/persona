@@ -15,6 +15,9 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; }
+/* Grid ke andar inputs (khaas kar date/time) apni natural width se screen ke bahar na jaayein */
+.form > *, .tabs > *, .item > *, .slot > * { min-width: 0; }
+.form input, .form select, .day-pick input { width: 100%; }
 h1 { font-size: 1.25rem; margin: 0; color: var(--accent); }
 h2 { font-size: 1.1rem; margin: 1.25rem 0 0.5rem; }
 h3 { font-size: 1rem; margin: 1.25rem 0 0.5rem; }
@@ -110,6 +113,8 @@ details summary { cursor: pointer; font-weight: 600; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 @media (max-width: 480px) {
+  .tab { padding: 10px 2px; font-size: 0.85rem; }
+  .top-actions .ghost { padding: 6px 10px; min-height: 36px; font-size: 0.85rem; }
   .stats { grid-template-columns: repeat(2, 1fr); }
   .bar-row { grid-template-columns: 70px 1fr 64px; }
 }
