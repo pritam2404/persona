@@ -99,7 +99,7 @@ export default function MakeVideo({ title, beats, lang, day, notify }) {
 
   return (
     <div className="card make-video" aria-labelledby="mk-h">
-      <h3 id="mk-h">🎬 Ek click mein video</h3>
+      <h3 id="mk-h">Ek click mein video</h3>
       <p className="hint">Awaaz, photo aur captions ke saath video isi phone/PC pe banta hai. Python ya terminal ki zaroorat nahi.</p>
 
       <div className="form">
@@ -120,8 +120,8 @@ export default function MakeVideo({ title, beats, lang, day, notify }) {
       </div>
 
       <div className="row wrap">
-        <button type="button" className="primary" onClick={start} disabled={busy}>
-          {busy ? 'Video ban raha hai…' : 'Video banao'}
+        <button type="button" className="primary big-btn" onClick={start} disabled={busy}>
+          {busy ? 'Video ban raha hai…' : '🎬 Video banao'}
         </button>
         {busy && (
           <button type="button" className="ghost" onClick={() => abortRef.current?.abort()}>Cancel</button>

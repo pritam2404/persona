@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { isoDate, fmtDuration } from '../lib/time.js';
 import { tasksOn, summarize } from '../lib/analyze.js';
 import { streak, consistency, weekCompare, trend, topTaskToday, energyTrend, encouragement } from '../lib/dashboard.js';
@@ -25,6 +26,32 @@ function Compare({ label, now, prev, fmt, higherIsGood = true }) {
   );
 }
 
+/** Number 0 se target tak ginti karta hua (0.8 sec). "Kam animation" setting pe seedha number. */
+function useCountUp(target, ms = 800) {
+  const reduce = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const [v, setV] = useState(reduce ? target : 0);
+  useEffect(() => {
+    if (reduce) { setV(target); return undefined; }
+    let raf;
+    const t0 = performance.now();
+    const step = (now) => {
+      const p = Math.min(1, (now - t0) / ms);
+      setV(Math.round(target * (1 - (1 - p) ** 3)));
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [target, ms, reduce]);
+  return v;
+}
+
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
 function scoreWord(s) {
   if (s >= 80) return 'Bahut badhiya';
   if (s >= 50) return 'Achha chal raha hai';
@@ -43,11 +70,15 @@ export default function HomeView({ tasks, goTo, settings }) {
   const energy = energyTrend(tasks, today);
   const name = String(settings?.name || '').trim();
   const pct = (x) => `${Math.round(x * 100)}%`;
+  const scoreShown = useCountUp(c.score);
+  const streakShown = useCountUp(st.current, 600);
 
   return (
     <section aria-labelledby="home-h">
-      <h2 id="home-h">{name ? `Namaste, ${name}` : 'Namaste'} 👋</h2>
-      <p className="muted home-msg">{encouragement(st, todays.length)}</p>
+      <div className="hero">
+        <h2 id="home-h">{greeting()}{name ? ', ' : ''}<span className="grad-text">{name}</span> 👋</h2>
+        <p className="muted home-msg">{encouragement(st, todays.length)}</p>
+      </div>
 
       {/* 1. Aaj */}
       <div className="card home-today">
@@ -63,15 +94,15 @@ export default function HomeView({ tasks, goTo, settings }) {
 
       {/* 2 + 3. Streak + score */}
       <div className="home-grid">
-        <div className="card stat-card">
-          <span className="big">🔥 {st.current}</span>
+        <div className="card stat-card fire">
+          <span className="big"><span className="flame" aria-hidden="true">🔥</span> {streakShown}</span>
           <span>din ki streak</span>
           <span className="hint">
             {st.todayPending && st.current > 0 ? 'Aaj ka baaki hai · ' : ''}Best: {st.best}
           </span>
         </div>
-        <div className="card stat-card">
-          <span className="big">{c.score}<small>/100</small></span>
+        <div className="card stat-card ocean">
+          <span className="big" aria-label={`${c.score} out of 100`}>{scoreShown}<small>/100</small></span>
           <span>Consistency</span>
           <span className="hint">{scoreWord(c.score)}</span>
         </div>

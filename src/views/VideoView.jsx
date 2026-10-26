@@ -30,7 +30,16 @@ export default function VideoView({ tasks, day, settings, setSettings, notify })
 
   return (
     <section aria-labelledby="vid-h">
-      <h2 id="vid-h">Coach video</h2>
+      <h2 id="vid-h">📖 Aaj ki <span className="grad-text">Story</span></h2>
+      <p className="hint">Tumhare din ka chhota review + kal ka plan, ek click mein video bana do.</p>
+
+      <MakeVideo
+        title={lines[0] || 'Persona'}
+        beats={lines.slice(1)}
+        lang={settings.lang}
+        day={day}
+        notify={notify}
+      />
 
       <div className="card form">
         <label>
@@ -46,36 +55,32 @@ export default function VideoView({ tasks, day, settings, setSettings, notify })
         </label>
       </div>
 
-      <label className="block">
-        Script (edit kar sakte ho) <span className="muted">· line 1 = title, har line = ek scene · ~{seconds}s</span>
-        <textarea rows={14} value={text} onChange={(e) => setText(e.target.value)} />
-      </label>
-      <p className="hint">Office aur private tasks ke naam script mein automatically chhupe hote hain. Edit karte waqt khud naam mat daalna.</p>
-
-      <div className="row wrap">
-        <button type="button" className="primary" onClick={() => downloadFile(`coach-${day}.txt`, text + '\n', 'text/plain;charset=utf-8')}>
-          Script download (.txt)
-        </button>
-        <button type="button" className="ghost" onClick={copyNarration}>Narration copy</button>
-        <button type="button" className="ghost" onClick={() => setText(generated)}>Reset</button>
-      </div>
-
-      <MakeVideo
-        title={lines[0] || 'Persona'}
-        beats={lines.slice(1)}
-        lang={settings.lang}
-        day={day}
-        notify={notify}
-      />
-
       <details className="card">
-        <summary>Advanced: laptop pe Python / lip-sync</summary>
-        <p className="hint">
-          Zaroorat nahi hai, upar wala button kaafi hai. Hoth hilne wala (lip-sync) video chahiye to:
-          script download karo, <code>video\make_coach_video.py</code> se <code>voice.mp3</code> banao,
-          phir <code>video\persona_lipsync_colab.ipynb</code> Google Colab pe chalao.
-        </p>
+        <summary>✏️ Story padho / badlo <span className="muted">· ~{seconds} sec</span></summary>
+        <label className="block" style={{ marginTop: 8 }}>
+          <span className="hint">Pehli line = title, har agli line = video ka ek scene.</span>
+          <textarea rows={12} value={text} onChange={(e) => setText(e.target.value)} />
+        </label>
+        <p className="hint">Office aur private kaam ke naam story mein apne aap chhupe rehte hain. Badalte waqt khud mat likhna.</p>
+        <div className="row wrap">
+          <button type="button" className="ghost sm" onClick={copyNarration}>Copy</button>
+          <button type="button" className="ghost sm" onClick={() => setText(generated)}>Reset</button>
+        </div>
       </details>
+
+      {settings.devMode && (
+        <div className="card dev-card">
+          <h3 style={{ marginTop: 0 }}>🛠️ Developer options</h3>
+          <p className="hint">
+            Laptop pe Python video / lip-sync ke liye. Story .txt download karo,{' '}
+            <code>video\make_coach_video.py</code> se <code>voice.mp3</code> banao, phir{' '}
+            <code>video\persona_lipsync_colab.ipynb</code> Google Colab pe chalao.
+          </p>
+          <button type="button" className="ghost" onClick={() => downloadFile(`coach-${day}.txt`, text + '\n', 'text/plain;charset=utf-8')}>
+            ⬇ Story .txt download
+          </button>
+        </div>
+      )}
     </section>
   );
 }

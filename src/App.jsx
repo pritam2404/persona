@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { loadTasks, saveTasks, loadSettings, saveSettings, downloadFile } from './lib/storage.js';
 import { parseImport, mergeTasks } from './lib/model.js';
 import { isoDate } from './lib/time.js';
@@ -10,14 +10,16 @@ import VideoView from './views/VideoView.jsx';
 import VideosView from './views/VideosView.jsx';
 import About from './views/About.jsx';
 import HomeView from './views/HomeView.jsx';
+import SettingsView from './views/SettingsView.jsx';
 
+// Neeche wala tab bar (icon + chhota naam)
 const TABS = [
-  { id: 'home', label: 'Home', component: HomeView },
-  { id: 'log', label: 'Aaj', component: LogView },
-  { id: 'analyse', label: 'Analyse', component: AnalyseView },
-  { id: 'plan', label: 'Kal', component: PlanView },
-  { id: 'video', label: 'Script', component: VideoView },
-  { id: 'videos', label: 'Videos', component: VideosView },
+  { id: 'home', label: 'Home', icon: '🏠', component: HomeView },
+  { id: 'log', label: 'Aaj', icon: '✍️', component: LogView },
+  { id: 'analyse', label: 'Analyse', icon: '📊', component: AnalyseView },
+  { id: 'plan', label: 'Kal', icon: '🗓️', component: PlanView },
+  { id: 'video', label: 'Story', icon: '🎬', component: VideoView },
+  { id: 'videos', label: 'Videos', icon: '📁', component: VideosView },
 ];
 
 export default function App() {
@@ -27,7 +29,6 @@ export default function App() {
   const [day, setDay] = useState(isoDate());
   const [toast, setToast] = useState('');
   const [showAbout, setShowAbout] = useState(false);
-  const fileRef = useRef(null);
 
   useEffect(() => saveTasks(tasks), [tasks]);
   useEffect(() => saveSettings(settings), [settings]);
@@ -37,7 +38,20 @@ export default function App() {
     return () => clearTimeout(id);
   }, [toast]);
 
+  // Theme: <html data-theme="dark"> + phone ka status bar colour
+  const theme = settings.theme || 'light';
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0b1020' : '#6366f1');
+  }, [theme]);
+
   const hasDemo = tasks.some((t) => t.id.startsWith('demo-'));
+
+  function goTo(id) {
+    setTab(id);
+    setShowAbout(false);
+    window.scrollTo({ top: 0 });
+  }
 
   async function exportData() {
     const payload = { app: 'persona', version: 1, exportedAt: new Date().toISOString(), tasks };
@@ -52,7 +66,6 @@ export default function App() {
         return;
       } catch (err) {
         if (err?.name === 'AbortError') return; // user ne cancel kiya
-        // share fail -> neeche normal download
       }
     }
     downloadFile(name, json);
@@ -83,28 +96,60 @@ export default function App() {
     }
   }
 
-  const Active = TABS.find((t) => t.id === tab).component;
+  const Active = tab === 'settings' ? null : TABS.find((t) => t.id === tab).component;
+  const shared = { tasks, setTasks, day, setDay, settings, setSettings, notify: setToast, goTo };
 
   return (
     <div className="app">
       <header className="top">
-        <h1>Persona</h1>
-        <div className="top-actions">
-          <button type="button" className="ghost" onClick={toggleDemo}>
-            {hasDemo ? 'Demo hatao' : 'Demo data'}
+        <button type="button" className="brand link-reset" onClick={() => goTo('home')} aria-label="Home">
+          <img src="./icon-192.png" alt="" />
+          <span>
+            <span className="brand-name">Persona</span>
+            <small>Aaj likho · Kal behtar</small>
+          </span>
+        </button>
+        <div className="row">
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => setSettings({ ...settings, theme: theme === 'dark' ? 'light' : 'dark' })}
+            aria-label={theme === 'dark' ? 'Light theme' : 'Dark theme'}
+            title="Theme badlo"
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
           </button>
-          <button type="button" className="ghost" onClick={exportData} title="Backup file banao / share karo">Backup</button>
-          <button type="button" className="ghost" onClick={() => fileRef.current?.click()}>Import</button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".json,application/json"
-            hidden
-            onChange={importData}
-            aria-label="Backup file import karo"
-          />
+          <button
+            type="button"
+            className={tab === 'settings' ? 'icon-btn on' : 'icon-btn'}
+            onClick={() => goTo('settings')}
+            aria-label="Settings"
+            title="Settings"
+          >
+            ⚙️
+          </button>
         </div>
       </header>
+
+      <main className="content">
+        {showAbout && <About onClose={() => setShowAbout(false)} />}
+        {tab === 'settings' ? (
+          <SettingsView
+            settings={settings}
+            setSettings={setSettings}
+            hasDemo={hasDemo}
+            onToggleDemo={toggleDemo}
+            onBackup={exportData}
+            onImport={importData}
+            onAbout={() => { setShowAbout(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            notify={setToast}
+          />
+        ) : (
+          <Active key={tab} {...shared} />
+        )}
+      </main>
+
+      <div className="toast" role="status" aria-live="polite">{toast}</div>
 
       <nav className="tabs" role="tablist" aria-label="Sections">
         {TABS.map((t) => (
@@ -114,39 +159,13 @@ export default function App() {
             role="tab"
             aria-selected={tab === t.id}
             className={tab === t.id ? 'tab active' : 'tab'}
-            onClick={() => setTab(t.id)}
+            onClick={() => goTo(t.id)}
           >
+            <span className="ti" aria-hidden="true">{t.icon}</span>
             {t.label}
           </button>
         ))}
       </nav>
-
-      <main className="content">
-        {showAbout && <About onClose={() => setShowAbout(false)} />}
-        <Active
-          tasks={tasks}
-          setTasks={setTasks}
-          day={day}
-          setDay={setDay}
-          settings={settings}
-          setSettings={setSettings}
-          notify={setToast}
-          goTo={(id) => { setTab(id); window.scrollTo({ top: 0 }); }}
-        />
-      </main>
-
-      <div className="toast" role="status" aria-live="polite">{toast}</div>
-      <footer className="foot">
-        Data sirf is device pe hai. Doosre device pe: Backup → WhatsApp/Drive → wahan Import.
-        {' · '}
-        <button
-          type="button"
-          className="link-btn"
-          onClick={() => { setShowAbout(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-        >
-          About · Made by Pritam
-        </button>
-      </footer>
     </div>
   );
 }
