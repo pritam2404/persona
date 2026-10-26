@@ -96,6 +96,14 @@ button { cursor: pointer; border-radius: 8px; min-height: 40px; padding: 8px 14p
 .bar-track { height: 10px; background: #f3f4f6; border-radius: 6px; overflow: hidden; }
 .bar-fill { display: block; height: 100%; background: var(--accent); }
 .bar-val { text-align: right; color: var(--muted); }
+.bar-fill.high, .dot.high { background: #059669; }
+.bar-fill.mid, .dot.mid { background: #d97706; }
+.bar-fill.low, .dot.low { background: #dc2626; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: middle; }
+.gap-card { background: #fffbeb; border-color: #fde68a; }
+.gap-card p { margin: 4px 0 8px; }
+.recents { margin: 4px 0 8px; }
+.recents .chip { font-size: 0.85rem; padding: 6px 12px; }
 hr { border: 0; border-top: 1px solid var(--line); margin: 8px 0; }
 
 .timeline { list-style: none; padding: 0; margin: 0; }

@@ -2,13 +2,20 @@ import { useState } from 'react';
 import { lastNDays, summarize, energyByHour, insights, distinctDays } from '../lib/analyze.js';
 import { fmtDuration } from '../lib/time.js';
 
-function Bar({ label, value, max, text }) {
+/** Energy ka rang + shabd (sirf rang pe depend nahi - colour-blind users ke liye shabd bhi) */
+function energyLevel(avg) {
+  if (avg < 2.5) return { cls: 'low', word: 'kam' };
+  if (avg < 3.5) return { cls: 'mid', word: 'theek' };
+  return { cls: 'high', word: 'high' };
+}
+
+function Bar({ label, value, max, text, tone }) {
   const pct = max ? Math.round((value / max) * 100) : 0;
   return (
     <div className="bar-row">
       <span className="bar-label">{label}</span>
       <span className="bar-track" aria-hidden="true">
-        <span className="bar-fill" style={{ width: `${pct}%` }} />
+        <span className={tone ? `bar-fill ${tone}` : 'bar-fill'} style={{ width: `${pct}%` }} />
       </span>
       <span className="bar-val">{text}</span>
     </div>
@@ -72,16 +79,23 @@ export default function AnalyseView({ tasks, day }) {
 
           <h3>Energy - ghante ke hisaab se</h3>
           <div className="card">
-            {energy.map((e) => (
-              <Bar
-                key={e.hour}
-                label={`${String(e.hour).padStart(2, '0')}:00`}
-                value={e.avg}
-                max={5}
-                text={`${e.avg.toFixed(1)} (${e.samples})`}
-              />
-            ))}
-            <p className="hint">Bracket mein = kitne tasks se average nikla. Kam samples = kam bharosa.</p>
+            {energy.map((e) => {
+              const lv = energyLevel(e.avg);
+              return (
+                <Bar
+                  key={e.hour}
+                  label={`${String(e.hour).padStart(2, '0')}:00`}
+                  value={e.avg}
+                  max={5}
+                  tone={lv.cls}
+                  text={`${e.avg.toFixed(1)} ${lv.word}`}
+                />
+              );
+            })}
+            <p className="hint">
+              <span className="dot high" /> high (3.5+) &nbsp; <span className="dot mid" /> theek &nbsp; <span className="dot low" /> kam (2.5 se neeche).
+              {' '}Har ghante ka average un tasks se jo us ghante shuru hue. Kam tasks = kam bharosa.
+            </p>
           </div>
         </>
       )}

@@ -91,3 +91,37 @@ test('coach script never leaks office/private titles', () => {
     assert.ok(txt.includes('Pritam'));
   }
 });
+
+import { findGaps, recentTemplates } from '../src/lib/analyze.js';
+
+const mk = (title, start, end, extra = {}) => ({
+  id: `${title}-${start}`, date: TODAY, title, area: 'personal', category: 'Other',
+  start, end, estMin: null, energy: 3, status: 'done', note: '', private: false, ...extra,
+});
+
+test('findGaps: only gaps between tasks, overlaps handled, small gaps ignored', () => {
+  const day = [
+    mk('A', '09:00', '10:00'),
+    mk('B', '09:30', '11:00'), // overlap -> covered till 11:00
+    mk('C', '11:20', '12:00'), // 20 min gap < 30 -> ignore
+    mk('D', '14:00', '15:00'), // 12:00-14:00 gap
+    mk('Night', '23:00', '01:00'), // crosses midnight -> ignored
+  ];
+  assert.deepEqual(findGaps(day), [{ start: '12:00', end: '14:00', min: 120 }]);
+  assert.deepEqual(findGaps([]), []);
+  assert.deepEqual(findGaps([mk('X', '09:00', '10:00')]), []); // ek task = koi gap nahi
+});
+
+test('recentTemplates: newest first, unique by title, keeps area/category/private', () => {
+  const list = [
+    mk('Gym', '07:00', '08:00', { date: '2026-10-21', category: 'Health' }),
+    mk('Audit queue', '09:00', '11:00', { date: '2026-10-22', area: 'office', private: true, estMin: 90 }),
+    mk('gym ', '07:00', '07:45', { date: '2026-10-23', category: 'Health' }),
+  ];
+  const r = recentTemplates(list);
+  assert.deepEqual(r.map((x) => x.title), ['gym ', 'Audit queue']);
+  assert.equal(r[1].area, 'office');
+  assert.equal(r[1].private, true);
+  assert.equal(r[1].estMin, 90);
+  assert.equal(recentTemplates(list, 1).length, 1);
+});

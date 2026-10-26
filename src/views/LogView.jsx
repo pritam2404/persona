@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { CATEGORIES, normalizeTask, validateTask, mergeTasks } from '../lib/model.js';
-import { tasksOn, summarize } from '../lib/analyze.js';
+import { tasksOn, summarize, findGaps, recentTemplates } from '../lib/analyze.js';
 import { durationMin, fmtDuration, addDays, toMin } from '../lib/time.js';
 
 function nowHHMM() {
@@ -37,6 +37,30 @@ export default function LogView({ tasks, setTasks, day, setDay, notify }) {
   const lastEnd = todays.length ? todays[todays.length - 1].end : '';
   const [form, setForm] = useState(() => emptyForm(day, lastEnd));
   const [errors, setErrors] = useState([]);
+  const titleRef = useRef(null);
+  const recents = recentTemplates(tasks);
+  const gaps = findGaps(todays);
+
+  /** Haal ka kaam ek tap mein: naam/area/category bhar do, time wahi rehne do */
+  function applyTemplate(tp) {
+    setForm((f) => ({
+      ...f,
+      title: tp.title,
+      area: tp.area,
+      category: tp.category,
+      private: tp.private,
+      estMin: tp.estMin ?? '',
+    }));
+    setErrors([]);
+  }
+
+  /** Khaali time pe tap -> form mein wahi start/end, bas naam likhna baaki */
+  function fillGap(g) {
+    setForm({ ...emptyForm(day, ''), start: g.start, end: g.end });
+    setErrors([]);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => titleRef.current?.focus(), 300);
+  }
 
   const set = (k) => (e) => {
     const v = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
@@ -88,11 +112,44 @@ export default function LogView({ tasks, setTasks, day, setDay, notify }) {
         <button type="button" className="ghost" onClick={() => changeDay(addDays(day, 1))} aria-label="Agla din">›</button>
       </div>
 
+      {gaps.length > 0 && (
+        <div className="card gap-card" role="region" aria-label="Log nahi hua time">
+          <strong>Ye time log nahi hua</strong>
+          <p className="hint">Is din ke tasks ke beech khaali time. Tap karke bharo (ya ignore karo).</p>
+          <div className="row wrap">
+            {gaps.map((g) => (
+              <button key={g.start} type="button" className="ghost sm" onClick={() => fillGap(g)}>
+                {g.start}–{g.end} · {fmtDuration(g.min)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <h2 id="log-h">{form.id ? 'Task edit karo' : 'Naya task'}</h2>
+
+      {!form.id && recents.length > 0 && (
+        <div className="recents" role="group" aria-label="Haal ke kaam - ek tap mein bharo">
+          <span className="hint">Haal ke kaam (tap = bhar do):</span>
+          <div className="row wrap">
+            {recents.map((tp) => (
+              <button
+                key={tp.title}
+                type="button"
+                className={form.title === tp.title ? 'chip on' : 'chip'}
+                onClick={() => applyTemplate(tp)}
+              >
+                {tp.title}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <form className="card form" onSubmit={submit} noValidate>
         <label className="full">
           Kya kiya?
-          <input value={form.title} onChange={set('title')} placeholder="jaise: Audit queue, Gym, Python practice" maxLength={120} required />
+          <input ref={titleRef} value={form.title} onChange={set('title')} placeholder="jaise: Audit queue, Gym, Python practice" maxLength={120} required />
         </label>
 
         <fieldset className="seg">

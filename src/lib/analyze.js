@@ -2,7 +2,7 @@
 // Sab simple statistics hai (count, average, median) - koi "black box" nahi.
 // Har insight ke saath "why" (kaaran) hota hai, taaki tum khud verify kar sako.
 
-import { durationMin, toMin, median, fmtDuration, addDays } from './time.js';
+import { durationMin, toMin, fromMin, median, fmtDuration, addDays } from './time.js';
 import { FOCUS_CATEGORIES } from './model.js';
 
 export function tasksOn(tasks, date) {
@@ -131,10 +131,12 @@ export function insights(allTasks, today, days = 14) {
   const sum = summarize(tasks);
   const office = sum.byArea.office || 0;
   const personal = sum.byArea.personal || 0;
+  const dinText = nDays === 1 ? 'Is 1 din' : `Pichhle ${nDays} din`;
+  const officeShare = office + personal ? Math.round((office / (office + personal)) * 100) : 0;
   out.push({
     kind: 'balance',
-    text: `Pichhle ${nDays} din mein office ${fmtDuration(office)}, personal ${fmtDuration(personal)}.`,
-    why: `${sum.count} tasks log hue`,
+    text: `${dinText} mein office ${fmtDuration(office)}, personal ${fmtDuration(personal)} (logged time ka ${officeShare}% office).`,
+    why: `Tumhare ${sum.count} logged tasks ke start-end time jod ke. Jo time log nahi hua wo isme nahi hai.`,
   });
 
   // Sirf sach mein high (avg >= 3.5) ghante - predict.js bhi yahi rule use karta hai
@@ -145,7 +147,9 @@ export function insights(allTasks, today, days = 14) {
       kind: 'energy',
       data: { hours: best.map((b) => b.hour) },
       text: `Tumhari energy sabse zyada ${h} ke aas-paas hoti hai. Mushkil kaam yahan rakho.`,
-      why: best.map((b) => `${b.hour}:00 avg ${b.avg.toFixed(1)}/5 (${b.samples} tasks)`).join('; '),
+      why: best
+        .map((b) => `${String(b.hour).padStart(2, '0')}:00 baje shuru hue ${b.samples} kaam mein tumne energy average ${b.avg.toFixed(1)}/5 di`)
+        .join('. ') + '.',
     });
   }
 
@@ -155,7 +159,7 @@ export function insights(allTasks, today, days = 14) {
       kind: 'focus',
       data: { focus: f.focus, low: f.low },
       text: `Focus wale ${f.focus} kaam mein se ${f.low} low energy (1-2) mein hue. Inko high-energy time pe shift karo.`,
-      why: 'Category: Deep work / Study / Side project, energy <= 2',
+      why: `Deep work, Study aur Side project wale ${f.focus} kaam dekhe. ${f.low} mein tumne energy 1 ya 2 likhi thi.`,
     });
   }
 
@@ -168,7 +172,7 @@ export function insights(allTasks, today, days = 14) {
       text: bias.ratio > 1
         ? `Kaam aam taur pe estimate se ${pct}% zyada time leta hai. Plan banate waqt buffer rakho.`
         : `Kaam aam taur pe estimate se ${pct}% jaldi khatam hota hai. Tum zyada plan kar sakte ho.`,
-      why: `${bias.samples} tasks ka median (actual / estimate) = ${bias.ratio.toFixed(2)}`,
+      why: `${bias.samples} kaam jinme "Socha tha" bhara tha: aam taur pe 30 min socha to asli mein ~${Math.round(30 * bias.ratio)} min laga.`,
     });
   }
 
@@ -178,7 +182,7 @@ export function insights(allTasks, today, days = 14) {
       kind: 'skip',
       data: { title: s.private ? null : s.title, area: s.area, count: s.skipped },
       text: `${name} ${s.skipped} baar skip hua. Isko chhota karo ya din mein pehle rakho.`,
-      why: `${s.skipped}/${s.total} baar skipped`,
+      why: `Ye kaam ${s.total} baar plan/log hua, usme ${s.skipped} baar "Skip" mark hua.`,
     });
   }
 
@@ -188,9 +192,57 @@ export function insights(allTasks, today, days = 14) {
       kind: 'health',
       data: { days: nDays },
       text: `${nDays} din mein Health (walk/gym) ka koi task nahi. 20 min walk se shuru karo.`,
-      why: 'Health category = 0 min',
+      why: `In ${nDays} din ke tasks mein "Health" category ka ek bhi kaam nahi mila.`,
     });
   }
 
+  return out;
+}
+
+/**
+ * Din ke andar jo time log nahi hua (pehle task ke start se aakhri task ke end tak).
+ * Raat ki neend / din shuru hone se pehle ka time gap nahi maana jaata.
+ * Raat 12 ke paar jaane wale tasks yahan ignore (unka end agle din hai).
+ * @returns {Array<{start:string,end:string,min:number}>}
+ */
+export function findGaps(dayTasks, minGap = 30) {
+  const spans = dayTasks
+    .map((t) => [toMin(t.start), toMin(t.end)])
+    .filter(([s, e]) => s !== null && e !== null && e > s)
+    .sort((a, b) => a[0] - b[0]);
+  const gaps = [];
+  let coveredUntil = null;
+  for (const [s, e] of spans) {
+    if (coveredUntil !== null && s - coveredUntil >= minGap) {
+      gaps.push({ start: fromMin(coveredUntil), end: fromMin(s), min: s - coveredUntil });
+    }
+    coveredUntil = coveredUntil === null ? e : Math.max(coveredUntil, e);
+  }
+  return gaps;
+}
+
+/**
+ * Haal ke alag-alag kaam (naya pehle) -> ek tap mein dobara log karne ke liye.
+ * Har kaam ka sabse naya version (area, category, private, socha-tha) use hota hai.
+ */
+export function recentTemplates(tasks, n = 6) {
+  const sorted = [...tasks].sort((a, b) =>
+    a.date === b.date ? b.start.localeCompare(a.start) : b.date.localeCompare(a.date)
+  );
+  const seen = new Set();
+  const out = [];
+  for (const t of sorted) {
+    const k = normTitle(t.title);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push({
+      title: t.title,
+      area: t.area,
+      category: t.category,
+      private: t.private,
+      estMin: t.estMin,
+    });
+    if (out.length >= n) break;
+  }
   return out;
 }
