@@ -100,6 +100,20 @@ button { cursor: pointer; border-radius: 8px; min-height: 40px; padding: 8px 14p
 .bar-fill.mid, .dot.mid { background: #d97706; }
 .bar-fill.low, .dot.low { background: #dc2626; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: middle; }
+.make-video { border-color: #c7d2fe; }
+.make-video h3 { margin-top: 0; }
+.photo-pick { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.btn-like { display: inline-flex; align-items: center; min-height: 40px; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
+.btn-like.disabled { opacity: 0.6; pointer-events: none; }
+.btn-like:focus-within { outline: 3px solid #a5b4fc; }
+.thumb { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
+.progress-box { margin: 10px 0; font-size: 0.9rem; }
+.progress-box p { margin: 0 0 4px; }
+.progress-box progress { width: 100%; height: 12px; accent-color: var(--accent); }
+.preview { display: block; width: 160px; aspect-ratio: 9 / 16; margin: 8px auto; border-radius: 8px; background: #000; }
+.preview.hidden { display: none; }
+.result { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.result .player { max-height: 60vh; }
 .gap-card { background: #fffbeb; border-color: #fde68a; }
 .gap-card p { margin: 4px 0 8px; }
 .recents { margin: 4px 0 8px; }

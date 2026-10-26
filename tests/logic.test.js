@@ -125,3 +125,15 @@ test('recentTemplates: newest first, unique by title, keeps area/category/privat
   assert.equal(r[1].estMin, 90);
   assert.equal(recentTemplates(list, 1).length, 1);
 });
+
+import { forSpeech } from '../src/lib/speech.js';
+
+test('forSpeech: times become speakable, captions untouched elsewhere', () => {
+  assert.equal(forSpeech('07:00 बजे, Morning walk।', 'hi'), 'सुबह 7 बजे, Morning walk।');
+  assert.equal(forSpeech('21:30 बजे, Python practice।', 'hi'), 'रात साढ़े 9 बजे, Python practice।');
+  assert.equal(forSpeech('09:00 से 14:00 तक ऑफिस का काम।', 'hi'), 'सुबह 9 बजे से दोपहर 2 बजे तक ऑफिस का काम।');
+  assert.equal(forSpeech('13:15 बजे', 'hi'), 'दोपहर 1 बजकर 15 मिनट');
+  assert.equal(forSpeech('काम 50% ज़्यादा', 'hi'), 'काम 50 प्रतिशत ज़्यादा');
+  assert.equal(forSpeech('At 21:00, "Gym".', 'en'), 'At 9 PM, Gym.');
+  assert.equal(forSpeech('From 09:30 to 12:00', 'en'), 'From 9:30 AM to 12 PM');
+});

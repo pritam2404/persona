@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { planTomorrow } from '../lib/predict.js';
 import { buildCoachScript, toScriptTxt, toNarration } from '../lib/script.js';
 import { downloadFile } from '../lib/storage.js';
+import MakeVideo from './MakeVideo.jsx';
 
 export default function VideoView({ tasks, day, settings, setSettings, notify }) {
   const generated = useMemo(() => {
@@ -59,24 +60,21 @@ export default function VideoView({ tasks, day, settings, setSettings, notify })
         <button type="button" className="ghost" onClick={() => setText(generated)}>Reset</button>
       </div>
 
-      <details className="card" open>
-        <summary>Video kaise banega (3 step)</summary>
-        <ol className="how">
-          <li>
-            <strong>Script download karo</strong> aur <code>projects\persona\video\input\</code> mein rakho.
-            Apni (ya AI-generated character ki) ek saaf, saamne se photo bhi wahin rakho.
-          </li>
-          <li>
-            Laptop pe chalao:<br />
-            <code>python make_coach_video.py input\coach-{day}.txt --photo input\face.jpg --lang {settings.lang}</code><br />
-            Isse milega: awaaz (<code>voice.mp3</code>) + photo wala captioned video (free, offline-ish).
-          </li>
-          <li>
-            <strong>Realistic lip-sync</strong> ke liye: photo + <code>voice.mp3</code> kisi talking-photo tool mein do
-            (video\README mein options hain). Ye step tumhara PC (Intel graphics) khud nahi kar sakta.
-          </li>
-        </ol>
-        <p className="hint">Sirf apni photo ya AI-generated character use karo. Kisi aur insaan ki photo bina permission ke nahi.</p>
+      <MakeVideo
+        title={lines[0] || 'Persona'}
+        beats={lines.slice(1)}
+        lang={settings.lang}
+        day={day}
+        notify={notify}
+      />
+
+      <details className="card">
+        <summary>Advanced: laptop pe Python / lip-sync</summary>
+        <p className="hint">
+          Zaroorat nahi hai, upar wala button kaafi hai. Hoth hilne wala (lip-sync) video chahiye to:
+          script download karo, <code>video\make_coach_video.py</code> se <code>voice.mp3</code> banao,
+          phir <code>video\persona_lipsync_colab.ipynb</code> Google Colab pe chalao.
+        </p>
       </details>
     </section>
   );
