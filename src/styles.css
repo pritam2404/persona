@@ -116,6 +116,11 @@ button { cursor: pointer; border-radius: 8px; min-height: 40px; padding: 8px 14p
 .result .player { max-height: 60vh; }
 .nudge { background: #eef2ff; border: 1px solid #c7d2fe; color: #3730a3; border-radius: 8px; padding: 8px 10px; font-size: 0.85rem; }
 fieldset.seg .chip { font-size: 0.85rem; padding: 7px 12px; }
+.link-btn { background: none; border: 0; padding: 0; min-height: 0; color: var(--accent); text-decoration: underline; font-size: inherit; cursor: pointer; }
+.about { border-color: #c7d2fe; }
+.about h2 { margin: 0; }
+.about p { margin: 6px 0; }
+.about a { color: var(--accent); }
 .gap-card { background: #fffbeb; border-color: #fde68a; }
 .gap-card p { margin: 4px 0 8px; }
 .recents { margin: 4px 0 8px; }

@@ -8,6 +8,7 @@ import AnalyseView from './views/AnalyseView.jsx';
 import PlanView from './views/PlanView.jsx';
 import VideoView from './views/VideoView.jsx';
 import VideosView from './views/VideosView.jsx';
+import About from './views/About.jsx';
 
 const TABS = [
   { id: 'log', label: 'Aaj', component: LogView },
@@ -23,6 +24,7 @@ export default function App() {
   const [tab, setTab] = useState('log');
   const [day, setDay] = useState(isoDate());
   const [toast, setToast] = useState('');
+  const [showAbout, setShowAbout] = useState(false);
   const fileRef = useRef(null);
 
   useEffect(() => saveTasks(tasks), [tasks]);
@@ -118,6 +120,7 @@ export default function App() {
       </nav>
 
       <main className="content">
+        {showAbout && <About onClose={() => setShowAbout(false)} />}
         <Active
           tasks={tasks}
           setTasks={setTasks}
@@ -130,7 +133,17 @@ export default function App() {
       </main>
 
       <div className="toast" role="status" aria-live="polite">{toast}</div>
-      <footer className="foot">Data sirf is device pe hai. Doosre device pe: Backup → WhatsApp/Drive → wahan Import.</footer>
+      <footer className="foot">
+        Data sirf is device pe hai. Doosre device pe: Backup → WhatsApp/Drive → wahan Import.
+        {' · '}
+        <button
+          type="button"
+          className="link-btn"
+          onClick={() => { setShowAbout(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+        >
+          About · Made by Pritam
+        </button>
+      </footer>
     </div>
   );
 }
