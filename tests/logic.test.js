@@ -149,3 +149,65 @@ test('lowEnergyHint: only for focus work in a known low-energy hour', () => {
   assert.equal(lowEnergyHint(tasks, 'Study', '03:00'), null); // us ghante ka data hi nahi
   assert.equal(lowEnergyHint([], 'Study', '21:10'), null);
 });
+
+import { streak, consistency, weekCompare, trend, topTaskToday, energyTrend, encouragement } from '../src/lib/dashboard.js';
+
+const onDays = (dates, extra = {}) => dates.map((date, i) => mk(`T${i}`, '09:00', '10:00', { id: `d${i}`, date, ...extra }));
+
+test('streak: today pending does not break it; best streak found', () => {
+  const t = onDays(['2026-10-15', '2026-10-16', '2026-10-17', '2026-10-21', '2026-10-22']);
+  assert.deepEqual(streak(t, '2026-10-23'), { current: 2, best: 3, todayPending: true });
+  assert.deepEqual(streak([...t, ...onDays(['2026-10-23'])], '2026-10-23'), { current: 3, best: 3, todayPending: false });
+  assert.deepEqual(streak(t, '2026-10-25'), { current: 0, best: 3, todayPending: true }); // 2 din gap = toota
+  assert.deepEqual(streak([], '2026-10-23'), { current: 0, best: 0, todayPending: true });
+});
+
+test('consistency: 60% days + 40% done, window ends yesterday if today empty', () => {
+  const t = onDays(['2026-10-17', '2026-10-18', '2026-10-19', '2026-10-20', '2026-10-21', '2026-10-22', '2026-10-16']);
+  const c = consistency(t, '2026-10-23'); // window 16..22, sab 7 din, sab done
+  assert.equal(c.score, 100);
+  assert.equal(c.to, '2026-10-22');
+  const half = onDays(['2026-10-22'], { status: 'skipped' });
+  assert.equal(consistency(half, '2026-10-23').score, Math.round((1 / 7) * 60)); // 9
+  assert.equal(consistency([], '2026-10-23').score, 0);
+});
+
+test('weekCompare + trend', () => {
+  const tasks = makeDemoTasks(TODAY, 10);
+  const w = weekCompare(tasks, TODAY);
+  assert.ok(w.now.count > w.prev.count); // demo = 10 din -> pichhla hafta sirf 3 din
+  assert.equal(trend(10, 5), 'up');
+  assert.equal(trend(5, 10), 'down');
+  assert.equal(trend(10, 10.2), 'same');
+  assert.equal(trend(5, null), null);
+  assert.equal(trend(3, 0), 'up');
+});
+
+test('topTaskToday: first focus item from yesterday\'s plan not yet done today', () => {
+  const tasks = makeDemoTasks(TODAY, 10).filter((t) => t.date !== TODAY); // aaj kuch log nahi
+  const top = topTaskToday(tasks, TODAY);
+  assert.ok(top && top.focus, JSON.stringify(top));
+  assert.ok(!/^Aaj /.test(top.reason), top.reason); // Home pe "Kal adhoora raha", "Aaj" nahi
+  const doneIt = [...tasks, mk(top.title, '09:00', '10:00', { id: 'x', status: 'done' })];
+  const next = topTaskToday(doneIt, TODAY);
+  assert.notEqual(next?.title, top.title);
+  assert.equal(topTaskToday([], TODAY), null);
+});
+
+test('energyTrend: 14 days, null where nothing logged', () => {
+  const e = energyTrend(onDays(['2026-10-23'], { energy: 4 }), TODAY);
+  assert.equal(e.length, 14);
+  assert.equal(e[13].date, TODAY);
+  assert.equal(e[13].avg, 4);
+  assert.equal(e[0].avg, null);
+});
+
+test('encouragement never guilt-trips', () => {
+  const msgs = [
+    encouragement({ current: 0, best: 0 }, 0),
+    encouragement({ current: 0, best: 5 }, 0),
+    encouragement({ current: 3, best: 5 }, 0),
+    encouragement({ current: 9, best: 9 }, 2),
+  ];
+  for (const m of msgs) assert.ok(!/fail|ready nahi|risk|kharab|nahi hoge/i.test(m), m);
+});

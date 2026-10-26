@@ -9,8 +9,10 @@ import PlanView from './views/PlanView.jsx';
 import VideoView from './views/VideoView.jsx';
 import VideosView from './views/VideosView.jsx';
 import About from './views/About.jsx';
+import HomeView from './views/HomeView.jsx';
 
 const TABS = [
+  { id: 'home', label: 'Home', component: HomeView },
   { id: 'log', label: 'Aaj', component: LogView },
   { id: 'analyse', label: 'Analyse', component: AnalyseView },
   { id: 'plan', label: 'Kal', component: PlanView },
@@ -21,7 +23,7 @@ const TABS = [
 export default function App() {
   const [tasks, setTasks] = useState(loadTasks);
   const [settings, setSettings] = useState(loadSettings);
-  const [tab, setTab] = useState('log');
+  const [tab, setTab] = useState('home');
   const [day, setDay] = useState(isoDate());
   const [toast, setToast] = useState('');
   const [showAbout, setShowAbout] = useState(false);
@@ -129,6 +131,7 @@ export default function App() {
           settings={settings}
           setSettings={setSettings}
           notify={setToast}
+          goTo={(id) => { setTab(id); window.scrollTo({ top: 0 }); }}
         />
       </main>
 
