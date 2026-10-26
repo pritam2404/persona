@@ -1,6 +1,20 @@
 import { useRef, useState } from 'react';
 import { CATEGORIES, normalizeTask, validateTask, mergeTasks } from '../lib/model.js';
-import { tasksOn, summarize, findGaps, recentTemplates } from '../lib/analyze.js';
+import { tasksOn, summarize, findGaps, recentTemplates, lowEnergyHint, lastNDays } from '../lib/analyze.js';
+
+// Chips pe chhota, samajh aane wala naam (data mein original English naam hi save hota hai)
+const CATEGORY_LABEL = {
+  'Deep work': 'Deep work 🎯',
+  Study: 'Study 📚',
+  Meetings: 'Meeting 👥',
+  Admin: 'Mail/Admin ✉️',
+  Health: 'Health 🏃',
+  Family: 'Family 🏠',
+  'Side project': 'Side project 🚀',
+  Chores: 'Ghar ka kaam 🧺',
+  Break: 'Break ☕',
+  Other: 'Other',
+};
 import { durationMin, fmtDuration, addDays, toMin } from '../lib/time.js';
 
 function nowHHMM() {
@@ -40,6 +54,8 @@ export default function LogView({ tasks, setTasks, day, setDay, notify }) {
   const titleRef = useRef(null);
   const recents = recentTemplates(tasks);
   const gaps = findGaps(todays);
+  const actualMin = durationMin(form.start, form.end);
+  const focusHint = lowEnergyHint(lastNDays(tasks, day, 14), form.category, form.start);
 
   /** Haal ka kaam ek tap mein: naam/area/category bhar do, time wahi rehne do */
   function applyTemplate(tp) {
@@ -152,7 +168,7 @@ export default function LogView({ tasks, setTasks, day, setDay, notify }) {
           <input ref={titleRef} value={form.title} onChange={set('title')} placeholder="jaise: Audit queue, Gym, Python practice" maxLength={120} required />
         </label>
 
-        <fieldset className="seg">
+        <fieldset className="seg full">
           <legend>Area</legend>
           {['personal', 'office'].map((a) => (
             <label key={a} className={form.area === a ? 'chip on' : 'chip'}>
@@ -162,12 +178,15 @@ export default function LogView({ tasks, setTasks, day, setDay, notify }) {
           ))}
         </fieldset>
 
-        <label>
-          Category
-          <select value={form.category} onChange={set('category')}>
-            {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-          </select>
-        </label>
+        <fieldset className="seg full">
+          <legend>Category</legend>
+          {CATEGORIES.map((c) => (
+            <label key={c} className={form.category === c ? 'chip on' : 'chip'}>
+              <input type="radio" name="category" value={c} checked={form.category === c} onChange={set('category')} />
+              {CATEGORY_LABEL[c] || c}
+            </label>
+          ))}
+        </fieldset>
 
         <label>
           Start
@@ -177,10 +196,17 @@ export default function LogView({ tasks, setTasks, day, setDay, notify }) {
           End
           <input type="time" value={form.end} onChange={set('end')} required />
         </label>
-        <label>
-          Socha tha (min)
-          <input type="number" min="1" max="1440" inputMode="numeric" value={form.estMin} onChange={set('estMin')} placeholder="optional" />
+        <label className="full">
+          Shuru karne se pehle socha tha kitna time lagega? (min)
+          <input type="number" min="1" max="1440" inputMode="numeric" value={form.estMin} onChange={set('estMin')} placeholder="optional, jaise 30" />
+          <span className="hint">
+            Asli time app khud Start-End se nikaalta hai{actualMin > 0 ? ` (abhi: ${fmtDuration(actualMin)})` : ''}. Ye sirf tumhara andaaza hai.
+          </span>
         </label>
+
+        {focusHint && (
+          <p className="hint full nudge" role="note">⚡ {focusHint}</p>
+        )}
 
         <label className="full">
           Energy: {form.energy}/5

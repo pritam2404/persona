@@ -137,3 +137,15 @@ test('forSpeech: times become speakable, captions untouched elsewhere', () => {
   assert.equal(forSpeech('At 21:00, "Gym".', 'en'), 'At 9 PM, Gym.');
   assert.equal(forSpeech('From 09:30 to 12:00', 'en'), 'From 9:30 AM to 12 PM');
 });
+
+import { lowEnergyHint } from '../src/lib/analyze.js';
+
+test('lowEnergyHint: only for focus work in a known low-energy hour', () => {
+  const tasks = makeDemoTasks(TODAY, 10); // 21:00 Python practice energy 2, 09:30 Audit queue high
+  const hint = lowEnergyHint(tasks, 'Study', '21:10');
+  assert.ok(hint && hint.includes('21:00') && hint.includes('09:00'), hint);
+  assert.equal(lowEnergyHint(tasks, 'Health', '21:10'), null); // focus category nahi
+  assert.equal(lowEnergyHint(tasks, 'Study', '09:15'), null); // high energy ghanta
+  assert.equal(lowEnergyHint(tasks, 'Study', '03:00'), null); // us ghante ka data hi nahi
+  assert.equal(lowEnergyHint([], 'Study', '21:10'), null);
+});

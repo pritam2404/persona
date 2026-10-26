@@ -246,3 +246,23 @@ export function recentTemplates(tasks, n = 6) {
   }
   return out;
 }
+
+/**
+ * Focus wala kaam (Deep work / Study / Side project) aise ghante mein jahan tumhari energy
+ * aam taur pe kam rehti hai -> ek chhota hint (rokta nahi). Kam data ho to kuch nahi bolta.
+ * @returns {string|null}
+ */
+export function lowEnergyHint(history, category, start, minSamples = 2) {
+  if (!FOCUS_CATEGORIES.has(category)) return null;
+  const s = toMin(start);
+  if (s === null) return null;
+  const hour = Math.floor(s / 60);
+  const byHour = energyByHour(history);
+  const here = byHour.find((h) => h.hour === hour);
+  if (!here || here.samples < minSamples || here.avg > 2.5) return null;
+  const best = bestHours(history, 1, minSamples).filter((b) => b.avg >= 3.5)[0];
+  const hh = (h) => `${String(h).padStart(2, '0')}:00`;
+  return best
+    ? `${hh(hour)} ke aas-paas tumhari energy aam taur pe ${here.avg.toFixed(1)}/5 rehti hai. Aise kaam ${hh(best.hour)} ke aas-paas zyada aasaan hote hain (avg ${best.avg.toFixed(1)}/5).`
+    : `${hh(hour)} ke aas-paas tumhari energy aam taur pe ${here.avg.toFixed(1)}/5 rehti hai. Shuru karne se pehle 10-15 min ka break try karo.`;
+}

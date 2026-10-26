@@ -35,10 +35,24 @@ export default function App() {
 
   const hasDemo = tasks.some((t) => t.id.startsWith('demo-'));
 
-  function exportData() {
+  async function exportData() {
     const payload = { app: 'persona', version: 1, exportedAt: new Date().toISOString(), tasks };
-    downloadFile(`persona-backup-${isoDate()}.persona.json`, JSON.stringify(payload, null, 2));
-    setToast(`${tasks.length} tasks export hue`);
+    const name = `persona-backup-${isoDate()}.persona.json`;
+    const json = JSON.stringify(payload, null, 2);
+    // Phone pe: seedha share sheet (WhatsApp "Message yourself" / Drive) -> doosre device pe Import
+    const file = new File([json], name, { type: 'application/json' });
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: 'Persona backup' });
+        setToast(`${tasks.length} tasks ka backup share hua`);
+        return;
+      } catch (err) {
+        if (err?.name === 'AbortError') return; // user ne cancel kiya
+        // share fail -> neeche normal download
+      }
+    }
+    downloadFile(name, json);
+    setToast(`${tasks.length} tasks ka backup download hua`);
   }
 
   async function importData(e) {
@@ -75,7 +89,7 @@ export default function App() {
           <button type="button" className="ghost" onClick={toggleDemo}>
             {hasDemo ? 'Demo hatao' : 'Demo data'}
           </button>
-          <button type="button" className="ghost" onClick={exportData}>Export</button>
+          <button type="button" className="ghost" onClick={exportData} title="Backup file banao / share karo">Backup</button>
           <button type="button" className="ghost" onClick={() => fileRef.current?.click()}>Import</button>
           <input
             ref={fileRef}
@@ -116,7 +130,7 @@ export default function App() {
       </main>
 
       <div className="toast" role="status" aria-live="polite">{toast}</div>
-      <footer className="foot">Data sirf is device pe hai. Phone aur laptop milane ke liye Export / Import karo.</footer>
+      <footer className="foot">Data sirf is device pe hai. Doosre device pe: Backup → WhatsApp/Drive → wahan Import.</footer>
     </div>
   );
 }

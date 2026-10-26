@@ -114,6 +114,8 @@ button { cursor: pointer; border-radius: 8px; min-height: 40px; padding: 8px 14p
 .preview.hidden { display: none; }
 .result { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
 .result .player { max-height: 60vh; }
+.nudge { background: #eef2ff; border: 1px solid #c7d2fe; color: #3730a3; border-radius: 8px; padding: 8px 10px; font-size: 0.85rem; }
+fieldset.seg .chip { font-size: 0.85rem; padding: 7px 12px; }
 .gap-card { background: #fffbeb; border-color: #fde68a; }
 .gap-card p { margin: 4px 0 8px; }
 .recents { margin: 4px 0 8px; }
