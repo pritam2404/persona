@@ -5,4 +5,9 @@ video/output/
 video/input/*
 !video/input/README.txt
 *.persona.json
+# Android signing key - KABHI commit / share mat karna
+*.keystore
+*.jks
+signing-key-info.txt
+android-package/
 __pycache__/

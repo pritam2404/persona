@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<title>Persona - Android App + Play Store Guide</title>
+<style>
+  body { font-family: 'Segoe UI', 'Nirmala UI', sans-serif; color: #111827; max-width: 820px; margin: 0 auto; padding: 28px; line-height: 1.55; font-size: 14px; }
+  h1 { color: #4f46e5; margin: 0 0 4px; }
+  h2 { border-bottom: 2px solid #4f46e5; padding-bottom: 4px; margin-top: 26px; page-break-after: avoid; }
+  code { background: #f3f4f6; padding: 1px 5px; border-radius: 4px; font-family: Consolas, monospace; font-size: 12.5px; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0; page-break-inside: avoid; }
+  th, td { border: 1px solid #d1d5db; padding: 6px 8px; text-align: left; vertical-align: top; }
+  th { background: #eef2ff; }
+  .box { border-left: 4px solid #4f46e5; background: #eef2ff; padding: 8px 12px; margin: 10px 0; page-break-inside: avoid; }
+  .warn { border-left-color: #b91c1c; background: #fef2f2; }
+  li { margin: 3px 0; }
+  .muted { color: #4b5563; }
+</style>
+</head>
+<body>
+<h1>Persona: Android App + Play Store</h1>
+<p class="muted">Live app: <b>https://pritam2404.github.io/persona/</b> &nbsp;·&nbsp; Code: github.com/pritam2404/persona</p>
+
+<h2>Level 1: Aaj hi phone pe (2 minute, free)</h2>
+<ol>
+  <li>Phone pe <b>Chrome</b> mein kholo: <code>https://pritam2404.github.io/persona/</code></li>
+  <li>Upar-right <b>⋮</b> menu → <b>Add to Home screen</b> / <b>Install app</b> → Install.</li>
+  <li>Home screen pe Persona ka icon aa jayega. App ki tarah full screen khulta hai aur offline bhi chalta hai.</li>
+</ol>
+<div class="box">Laptop wala data phone pe apne aap nahi aata. Laptop pe <b>Export</b> karo, file phone pe bhejo, phone pe <b>Import</b> karo.</div>
+
+<h2>Level 2: Asli APK file (15 minute, free)</h2>
+<p>PWABuilder (Microsoft ki free website) tumhari live site se Android app bana deti hai. Laptop pe kuch install nahi karna.</p>
+<ol>
+  <li><b>pwabuilder.com</b> kholo → URL daalo <code>https://pritam2404.github.io/persona/</code> → <b>Start</b>.</li>
+  <li>Report aayegi. Agar koi red warning ho, uska screenshot mujhe bhejo.</li>
+  <li><b>Package for stores</b> → <b>Android</b> → <b>Generate Package</b>. Options mein:
+    <ul>
+      <li>Package ID: <code>io.github.pritam2404.persona</code> (baad mein kabhi badal nahi sakte)</li>
+      <li>App name: <code>Persona</code>, Version: <code>1.0.0</code></li>
+      <li>Signing key: <b>New</b> (PWABuilder bana dega)</li>
+    </ul>
+  </li>
+  <li>Ek <b>.zip</b> download hogi. Use <code>projects\persona\android-package\</code> mein unzip karo. Ye folder git mein nahi jaata.</li>
+</ol>
+<table>
+  <tr><th>Zip ki file</th><th>Kis kaam ki</th></tr>
+  <tr><td><code>*.apk</code></td><td>Phone pe seedha install karke test karne ke liye</td></tr>
+  <tr><td><code>*.aab</code></td><td>Play Store pe upload karne ke liye</td></tr>
+  <tr><td><code>signing.keystore</code> + <code>signing-key-info.txt</code></td><td>App ki "chaabi" (signing key)</td></tr>
+  <tr><td><code>assetlinks.json</code></td><td>App ke upar ka URL bar hatane ke liye (Level 2.5)</td></tr>
+</table>
+<div class="box warn"><b>Bahut zaroori:</b> <code>signing.keystore</code> aur uska password Google Drive ya pendrive mein bhi backup karo. Ye kho gaya toh Play Store pe app ka update kabhi nahi daal paoge. Kisi ko mat bhejna, mujhe bhi nahi. Ye kisi bhi repo mein upload nahi hona chahiye.</div>
+
+<h3>APK phone pe install karna</h3>
+<ol>
+  <li>APK file phone pe bhejo (USB cable, ya Drive).</li>
+  <li>Files app mein us APK pe tap karo. Phone poochega "Install unknown apps"? <b>Allow</b> karo (sirf Files app ke liye).</li>
+  <li>Install. Ho gaya.</li>
+</ol>
+
+<h2>Level 2.5: URL bar hatana</h2>
+<p>Pehli baar app ke upar ek chhota browser bar dikhega. Use hatane ke liye Android ko proof chahiye ki app aur website ek hi owner ki hain. Iske liye <code>assetlinks.json</code> ko <code>https://pritam2404.github.io/.well-known/assetlinks.json</code> pe daalna padta hai. Ye domain ke root pe hota hai, persona folder mein nahi.</p>
+<p><b>Ye main kar dunga:</b> mujhe batao ki zip unzip ho gaya. Main <code>android-package\assetlinks.json</code> padh ke (usme sirf public fingerprint hota hai, koi secret nahi) <code>pritam2404.github.io</code> naam ka repo bana ke daal dunga.</p>
+
+<h2>Level 3: Google Play Store</h2>
+<table>
+  <tr><th>Step</th><th>Kya karna hai</th><th>Kaun</th></tr>
+  <tr><td>1. Developer account</td><td>play.google.com/console → <b>Personal</b> account → $25 ek baar → ID verification (Aadhaar/PAN jaisa ID + phone)</td><td>Tum</td></tr>
+  <tr><td>2. App banao</td><td>Create app → naam "Persona - Daily Coach", Free, App</td><td>Tum</td></tr>
+  <tr><td>3. Listing bharo</td><td><code>store\listing.txt</code> se copy-paste karo. Icon, feature graphic ready hai. 2+ phone screenshots khud lo</td><td>Tum (text ready hai)</td></tr>
+  <tr><td>4. Policy forms</td><td>Privacy policy URL, Data safety (No data collected), Content rating, Target audience. Jawaab <code>listing.txt</code> mein hain</td><td>Tum</td></tr>
+  <tr><td>5. Closed testing</td><td><code>.aab</code> upload → Closed testing track → <b>kam se kam 12 testers</b> (dost/family ke Gmail) jo <b>14 din lagatar</b> opt-in rahein</td><td>Tum + 12 log</td></tr>
+  <tr><td>6. Production</td><td>14 din baad "Apply for production" → Google review (kuch din) → Play Store pe live</td><td>Google</td></tr>
+</table>
+<div class="box">Step 5 Google ka rule hai, naye personal accounts ke liye. Sabse zyada time isi mein lagta hai. Rules badalte rehte hain, Play Console mein jo likha ho wahi follow karo. Asli kharcha sirf $25 hai, baaki sab free.</div>
+
+<h2>Videos phone pe kaise aayenge</h2>
+<ol>
+  <li>Colab notebook phone ke Chrome mein bhi chalta hai. Aakhri cell video seedha phone ke Downloads mein save karta hai. Laptop pe banaya ho toh WhatsApp/Drive se phone pe bhej do.</li>
+  <li>Persona → <b>Videos</b> tab → <b>+ Video add karo</b> → video chuno.</li>
+  <li>App mein Play karo. <b>Save / Share</b> se gallery, Drive ya WhatsApp mein bhejo.</li>
+</ol>
+<p class="muted">Videos sirf phone ke andar rehte hain. App uninstall karoge ya data clear karoge toh videos bhi chale jayenge, isliye zaroori videos ki copy gallery mein rakho.</p>
+
+<h2>App update kaise hoga</h2>
+<p>Code badla → push → GitHub khud site update karta hai → installed app agli baar kholne pe naya version le leta hai. Play Store pe naya <code>.aab</code> tabhi daalna padta hai jab icon, naam ya package badle.</p>
+</body>
+</html>

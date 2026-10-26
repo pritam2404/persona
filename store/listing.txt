@@ -1,0 +1,48 @@
+PLAY STORE LISTING - copy-paste karo
+=====================================
+
+App name (max 30):
+Persona - Daily Coach
+
+Short description (max 80):
+Log your day, see your patterns, get a smarter plan for tomorrow.
+
+Full description (max 4000):
+Persona helps you understand how your day really goes and plan a better tomorrow.
+
+LOG YOUR DAY
+Note each task in seconds: what you did, when, how long you expected it to take, your energy level and whether you finished it.
+
+SEE YOUR PATTERNS
+- Where your time goes: work vs personal, by category
+- Your highest-energy hours
+- How often tasks take longer than you planned
+- Which tasks you keep skipping
+Every insight shows the data behind it, so you can trust it.
+
+A SMARTER PLAN FOR TOMORROW
+Persona suggests tomorrow's schedule: unfinished tasks first, your routines included, realistic durations, and focus work placed in your best-energy hours. Each suggestion explains why.
+
+YOUR COACH VIDEOS
+Generate a short daily coach script in Hindi or English, and keep your coach videos in one place on your phone.
+
+PRIVATE BY DESIGN
+No account. No ads. No tracking. Your tasks and videos stay on your phone. Work task names are never included in coach scripts.
+
+Category: Productivity
+Tags: productivity, planner, habit, time tracking
+Contact email: <apna email daalo>
+Privacy policy URL: https://pritam2404.github.io/persona/privacy.html
+
+Graphics:
+- App icon 512x512:      public/icon-512.png
+- Feature graphic:        store/feature-graphic-1024x500.png
+- Phone screenshots (2-8): phone pe app kholo -> Demo data -> har tab ka screenshot lo
+
+DATA SAFETY FORM (Play Console) - sahi jawaab:
+- Does your app collect or share any required user data types?  -> No
+- (App koi data developer ko nahi bhejta; sab device pe rehta hai)
+
+CONTENT RATING questionnaire: category "Utility / Productivity", sab violence/sexual/etc. sawaalon pe "No".
+TARGET AUDIENCE: 18+ (sabse simple; kids policy lagu nahi hoti)
+ADS: No ads
