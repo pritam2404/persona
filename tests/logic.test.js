@@ -351,3 +351,19 @@ test('resetEverything removes only persona data', async () => {
   assert.equal(s.getItem('persona.tasks.v1'), null);
   assert.equal(s.getItem('other.app'), 'keep');
 });
+
+import { oneClickPrompt, googleAiUrl } from '../src/lib/chat.js';
+
+test('one-click prompt: short, safe, language-aware, valid Google URL', () => {
+  const tasks = makeDemoTasks(TODAY, 10);
+  tasks.push({ ...tasks[1], id: 'o3', title: 'Project Falcon review', area: 'office', private: true, date: TODAY, note: 'confidential' });
+  const ctx = buildContext(tasks, { name: 'Pritam', lang: 'hi' }, TODAY);
+  const p = oneClickPrompt('Mushkil kaam kab karun?', ctx, 'hi');
+  assert.ok(p.includes('Hinglish') && p.includes('Mushkil kaam kab karun?'));
+  for (const s of ['Falcon', 'confidential', 'Audit queue']) assert.ok(!p.includes(s), s);
+  assert.ok(p.length < 1700, `prompt too long: ${p.length}`);
+  const u = googleAiUrl(p);
+  assert.ok(u.startsWith('https://www.google.com/search?udm=50&q='));
+  assert.ok(u.length < 8000);
+  assert.ok(oneClickPrompt('x', ctx, 'ta').includes('Tamil'));
+});

@@ -140,10 +140,19 @@ function friendlyError(status, body) {
 }
 
 async function getJSON(url, init) {
-  const res = await fetch(url, init);
+  let res;
+  try {
+    res = await fetch(url, init);
+  } catch {
+    throw new Error('Internet ya Google tak connection nahi hua.');
+  }
   let body = null;
   try { body = await res.json(); } catch { /* khaali body */ }
-  if (!res.ok) throw new Error(friendlyError(res.status, body));
+  if (!res.ok) {
+    const e = new Error(friendlyError(res.status, body));
+    e.status = res.status;
+    throw e;
+  }
   return body;
 }
 
@@ -163,27 +172,59 @@ export async function askGemini(o) {
   const model = await resolveModel(o.apiKey);
   const contents = [...o.history.slice(-6), { role: 'user', text: o.question }]
     .map((m) => ({ role: m.role, parts: [{ text: m.text }] }));
-  const body = {
+  // NOTE: Gemini 3.6+ ne temperature jaise sampling settings hata diye - bhejo to 400 error.
+  // Isliye pehle chhota config, 400 aaye to bina kisi config ke dobara.
+  const base = {
     systemInstruction: { parts: [{ text: `${systemPrompt(o.lang)}\n\nUSER DATA:\n${o.context}` }] },
     contents,
-    generationConfig: { maxOutputTokens: 1024, temperature: 0.4 },
   };
-  // Gemini 3+ "soch" ke jawaab deta hai; chhote sawaal ke liye kam sochna = tez jawaab
-  if (/^gemini-([3-9]|\d{2})/.test(model)) body.generationConfig.thinkingConfig = { thinkingLevel: 'low' };
-  try {
-    const json = await getJSON(`${API}/models/${model}:generateContent`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-goog-api-key': o.apiKey },
-      body: JSON.stringify(body),
-      signal: o.signal,
-    });
-    return shortAnswer(parseAnswer(json));
-  } catch (err) {
-    // Model hata diya gaya ho to cache saaf karke agli baar naya chuno
-    if (/not found|not supported/i.test(err.message)) localStorage.removeItem(MODEL_STORE);
-    throw err;
+  const attempts = [{ ...base, generationConfig: { maxOutputTokens: 1024 } }, base];
+  let lastErr;
+  for (const body of attempts) {
+    try {
+      const json = await getJSON(`${API}/models/${model}:generateContent`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-goog-api-key': o.apiKey },
+        body: JSON.stringify(body),
+        signal: o.signal,
+      });
+      return shortAnswer(parseAnswer(json));
+    } catch (err) {
+      lastErr = err;
+      // Model hata diya gaya ho to cache saaf karke agli baar naya chuno
+      if (/not found|not supported for generateContent/i.test(err.message)) {
+        localStorage.removeItem(MODEL_STORE);
+        break;
+      }
+      if (!err.status || err.status !== 400 || /api key/i.test(err.message)) break;
+    }
   }
+  throw lastErr;
 }
+
+// ---------------- One-click (bina API key) ----------------
+
+/**
+ * Ek chhota prompt: rules + safe data + sawaal. Google/Gemini mein paste/URL ke liye.
+ * URL lambi na ho isliye data ~1200 characters tak.
+ */
+export function oneClickPrompt(question, context, lang = 'hi', maxData = 1200) {
+  const L = LANGS.find((l) => l.code === lang);
+  const langName = lang === 'hi' ? 'Hinglish' : (L?.en || 'English');
+  const data = context.length > maxData ? `${context.slice(0, maxData).trim()}…` : context;
+  return [
+    `You are my productivity coach. Reply in ${langName}, max 3 short sentences, practical, based on my data.`,
+    `My data:\n${data}`,
+    `My question: ${String(question).trim()}`,
+  ].join('\n\n');
+}
+
+/** Google AI Mode (Gemini se chalta hai): sawaal URL mein -> ek tap mein jawaab */
+export function googleAiUrl(prompt) {
+  return `https://www.google.com/search?udm=50&q=${encodeURIComponent(prompt)}`;
+}
+
+export const GEMINI_APP_URL = 'https://gemini.google.com/app';
 
 export function looksLikeKey(k) {
   return /^[A-Za-z0-9_-]{30,60}$/.test(String(k || '').trim());

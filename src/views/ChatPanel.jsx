@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { askGemini, buildContext, looksLikeKey, KEY_STORE } from '../lib/chat.js';
+import { askGemini, buildContext, looksLikeKey, KEY_STORE, oneClickPrompt, googleAiUrl, GEMINI_APP_URL } from '../lib/chat.js';
 
 const HISTORY_STORE = 'persona.chat.v1';
 
@@ -44,6 +44,39 @@ export default function ChatPanel({ t, tasks, settings }) {
     setApiKey(k);
     setKeyDraft('');
     setErr('');
+  }
+
+  // ---- One-click (bina key): prompt bana ke Google AI / Gemini app mein bhejo ----
+  const [showAdv, setShowAdv] = useState(false);
+  const [note, setNote] = useState('');
+  const promptFor = (question) => oneClickPrompt(question, buildContext(tasks, settings), settings.lang);
+
+  function askGoogle(text) {
+    const question = String(text ?? q).trim();
+    if (!question) { setErr(t('oc_need_q')); return; }
+    setErr('');
+    // window.open click ke andar hi (await se pehle), warna popup block
+    window.open(googleAiUrl(promptFor(question)), '_blank', 'noopener');
+  }
+
+  async function askGeminiApp(text) {
+    const question = String(text ?? q).trim();
+    if (!question) { setErr(t('oc_need_q')); return; }
+    setErr('');
+    const prompt = promptFor(question);
+    // Phone pe: share sheet -> "Gemini" chuno -> sawaal bhar ke aata hai
+    if (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent)) {
+      try { await navigator.share({ text: prompt }); return; } catch (e2) { if (e2?.name === 'AbortError') return; }
+    }
+    // PC: Gemini kholo + prompt copy, user bas paste kare
+    const win = window.open(GEMINI_APP_URL, '_blank', 'noopener');
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setNote(t('oc_copied'));
+    } catch {
+      setNote(t('oc_copy_fail'));
+    }
+    if (!win) setNote(`${t('oc_copied')} ${GEMINI_APP_URL}`);
   }
 
   function removeKey() {
@@ -97,8 +130,35 @@ export default function ChatPanel({ t, tasks, settings }) {
             </div>
           </div>
 
-          {!apiKey ? (
+          {!apiKey && !showAdv ? (
+            <div className="chat-body">
+              <div className="bubble model">{t('oc_intro')}</div>
+              <div className="chat-sugs">
+                {['chat_s1', 'chat_s2', 'chat_s3'].map((k) => (
+                  <button key={k} type="button" className="chip" onClick={() => askGoogle(t(k))}>🔍 {t(k)}</button>
+                ))}
+              </div>
+              <textarea
+                ref={inputRef}
+                rows={2}
+                value={q}
+                maxLength={300}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder={t('chat_ph')}
+                aria-label={t('chat_ph')}
+              />
+              <button type="button" className="primary" onClick={() => askGoogle()}>🔍 {t('oc_google')}</button>
+              <button type="button" className="ghost" onClick={() => askGeminiApp()}>✨ {t('oc_gemini')}</button>
+              {err && <p className="errors" role="alert">{err}</p>}
+              {note && <p className="nudge" role="status">{note}</p>}
+              <p className="hint">🔒 {t('oc_privacy')}</p>
+              <button type="button" className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={() => { setShowAdv(true); setErr(''); }}>
+                {t('oc_adv')}
+              </button>
+            </div>
+          ) : !apiKey ? (
             <form className="chat-body chat-setup" onSubmit={saveKey}>
+              <button type="button" className="link-btn" style={{ alignSelf: 'flex-start' }} onClick={() => setShowAdv(false)}>← {t('back')}</button>
               <p>{t('chat_need_key')}</p>
               <ol className="how">
                 <li><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com/apikey</a> kholo (Google account se login)</li>
