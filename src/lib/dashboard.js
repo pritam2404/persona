@@ -5,6 +5,7 @@ import { addDays, durationMin } from './time.js';
 import { FOCUS_CATEGORIES } from './model.js';
 import { tasksOn, lastNDays, summarize, normTitle } from './analyze.js';
 import { planTomorrow } from './predict.js';
+import { t } from './i18n.js';
 
 function loggedDaySet(tasks) {
   return new Set(tasks.map((t) => t.date));
@@ -121,10 +122,21 @@ export function energyTrend(tasks, today, n = 14) {
 }
 
 /** Ek chhota, bina guilt wala message */
-export function encouragement(st, todayCount) {
-  if (todayCount > 0 && st.current >= 7) return `${st.current} din lagatar! Ye aadat ban rahi hai.`;
-  if (todayCount > 0) return 'Aaj ka log ho gaya. Badhiya.';
-  if (st.current > 0) return `Kal tak ${st.current} din ki streak hai. Aaj ek kaam likh do, bas.`;
-  if (st.best > 0) return 'Koi baat nahi, aaj se phir shuru karte hain.';
-  return 'Pehla kaam likho, Persona tumhara pattern seekhna shuru karega.';
+export function encouragement(st, todayCount, lang = 'hi') {
+  if (todayCount > 0 && st.current >= 7) return t(lang, 'enc_streak7', st.current);
+  if (todayCount > 0) return t(lang, 'enc_done');
+  if (st.current > 0) return t(lang, 'enc_keep', st.current);
+  if (st.best > 0) return t(lang, 'enc_restart');
+  return t(lang, 'enc_first');
+}
+
+/**
+ * Activeness ke hisaab se kya dikhana hai.
+ * less = simple app (4 tabs, chhota Home), medium = sab, more = sab + Home pe insights.
+ */
+export function layoutFor(activity) {
+  const all = ['home', 'log', 'analyse', 'plan', 'video', 'videos'];
+  if (activity === 'less') return { tabs: ['home', 'log', 'plan', 'video'], homeExtras: false, homeTips: false };
+  if (activity === 'more') return { tabs: all, homeExtras: true, homeTips: true };
+  return { tabs: all, homeExtras: true, homeTips: false };
 }

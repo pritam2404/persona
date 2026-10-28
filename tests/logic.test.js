@@ -79,11 +79,11 @@ test('plan with no data is empty + low confidence', () => {
   assert.equal(plan.confidence, 'low');
 });
 
-test('coach script never leaks office/private titles', () => {
+test('coach script never leaks office/private titles (all 8 languages)', () => {
   const tasks = makeDemoTasks(TODAY, 10);
   tasks.push({ ...tasks[0], id: 'p1', title: 'Doctor visit SECRET', private: true, date: TODAY, status: 'skipped' });
   const plan = planTomorrow(tasks, TODAY);
-  for (const lang of ['hi', 'en']) {
+  for (const lang of ['hi', 'en', 'bn', 'pa', 'kn', 'ta', 'te', 'ml']) {
     const txt = toScriptTxt(buildCoachScript(tasks, TODAY, plan, { lang, name: 'Pritam' }));
     for (const secret of ['Audit queue', 'SOP doubt', 'Team standup', 'Email + Slack', 'SECRET']) {
       assert.ok(!txt.includes(secret), `${lang} script leaked "${secret}"`);
@@ -210,4 +210,39 @@ test('encouragement never guilt-trips', () => {
     encouragement({ current: 9, best: 9 }, 2),
   ];
   for (const m of msgs) assert.ok(!/fail|ready nahi|risk|kharab|nahi hoge/i.test(m), m);
+});
+
+import { LANGS, STRINGS, t as tr } from '../src/lib/i18n.js';
+import { SCRIPT_LANGS, buildCoachScript as bcs } from '../src/lib/script.js';
+import { layoutFor } from '../src/lib/dashboard.js';
+import { voiceLangFor, defaultVoice } from '../src/lib/voices.js';
+
+test('i18n: every language has the core screens; missing keys fall back to English', () => {
+  const core = ['tab_home', 'tab_log', 'tab_plan', 'tab_story', 'ob_lang', 'ob_name', 'ob_activity', 'ob_done', 'next', 'today_none', 'first_task'];
+  for (const l of LANGS) {
+    assert.ok(STRINGS[l.code], l.code);
+    for (const k of core) assert.ok(STRINGS[l.code][k], `${l.code} missing ${k}`);
+    assert.equal(typeof tr(l.code, 'enc_keep', 3), 'string');
+  }
+  for (const k of Object.keys(STRINGS.en)) assert.ok(k in STRINGS.hi, `hi missing ${k}`);
+  assert.equal(tr('ta', 'lock_hint'), STRINGS.en.lock_hint); // fallback
+  assert.deepEqual(SCRIPT_LANGS.sort(), LANGS.map((l) => l.code).sort());
+});
+
+test('same story structure in every language (needed for English voice fallback)', () => {
+  const tasks = makeDemoTasks(TODAY, 10);
+  const plan = planTomorrow(tasks, TODAY);
+  const n = bcs(tasks, TODAY, plan, { lang: 'en' }).beats.length;
+  for (const l of SCRIPT_LANGS) assert.equal(bcs(tasks, TODAY, plan, { lang: l }).beats.length, n, l);
+});
+
+test('activeness layout + voice choice', () => {
+  assert.deepEqual(layoutFor('less').tabs, ['home', 'log', 'plan', 'video']);
+  assert.equal(layoutFor('more').homeTips, true);
+  assert.equal(layoutFor(undefined).tabs.length, 6);
+  assert.equal(voiceLangFor('ta'), 'en');
+  assert.equal(voiceLangFor('te'), 'te');
+  assert.equal(defaultVoice('hi', 'male'), 'hi_IN-pratham-medium');
+  assert.equal(defaultVoice('hi', ''), 'hi_IN-priyamvada-medium');
+  assert.equal(defaultVoice('kn', 'male'), 'en_GB-alan-medium');
 });

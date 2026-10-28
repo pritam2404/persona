@@ -177,7 +177,9 @@ export async function makeVideo(o) {
     const parts = [];
     for (let i = 0; i < o.beats.length; i += 1) {
       status('tts', i / o.beats.length, `Awaaz ban rahi hai: line ${i + 1}/${o.beats.length}`);
-      const buf = await synth(forSpeech(o.beats[i], o.lang), actx);
+      // Captions = beats (story ki bhasha). Awaaz = spoken line (agar alag di ho, jaise English).
+      const say = o.spoken?.[i] ?? o.beats[i];
+      const buf = await synth(forSpeech(say, o.speechLang || o.lang), actx);
       parts.push({ text: o.beats[i], buf: trimSilence(buf, actx) });
       check();
     }

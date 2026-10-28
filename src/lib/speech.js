@@ -36,9 +36,13 @@ export function forSpeech(text, lang = 'hi') {
     s = s.replace(/\b(\d{1,2}):(\d{2})(\s*बजे)?/g, (_, h, m) => hiTime(Number(h), Number(m)));
     s = s.replace(/बजे\s+बजे/g, 'बजे');
     s = s.replace(/(\d+)\s*%/g, '$1 प्रतिशत');
-  } else {
+  } else if (lang === 'en') {
     s = s.replace(/\b(\d{1,2}):(\d{2})\b/g, (_, h, m) => enTime(Number(h), Number(m)));
     s = s.replace(/(\d+)\s*%/g, '$1 percent');
+  } else {
+    // bn / te / ml: "07:00" -> "7", "21:30" -> "21 30" (awaaz number apni bhasha mein padhti hai)
+    s = s.replace(/(\d{1,2}):(\d{2})/g, (_, h, m) => (Number(m) === 0 ? `${Number(h)}` : `${Number(h)} ${Number(m)}`));
+    s = s.replace(/(\d+)\s*%/g, '$1');
   }
   // Quotes awaaz mein ajeeb pause dete hain
   return s.replace(/["“”]/g, '').replace(/\s+/g, ' ').trim();

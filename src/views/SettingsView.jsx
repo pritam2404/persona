@@ -1,41 +1,67 @@
 import { useRef, useState } from 'react';
+import { LANGS } from '../lib/i18n.js';
 
-export const APP_VERSION = '1.4.0';
+export const APP_VERSION = '2.0.0';
 
 /**
- * Settings: theme, demo data, backup/import, about.
+ * Settings: profile + bhasha, theme, data (backup/import/demo), app lock, about.
  * "Developer options" chhupe hain: version pe 5 baar tap karo (Android jaisa).
  */
-export default function SettingsView({ settings, setSettings, hasDemo, onToggleDemo, onBackup, onImport, onAbout, notify }) {
+export default function SettingsView({
+  t, settings, setSettings, hasDemo, onToggleDemo, onBackup, onImport, onAbout, notify, lockSlot,
+}) {
   const fileRef = useRef(null);
   const [taps, setTaps] = useState(0);
 
   function tapVersion() {
     if (settings.devMode) {
-      notify('Developer options pehle se on hain');
+      notify('Developer options on');
       return;
     }
     const n = taps + 1;
     setTaps(n);
     if (n >= 5) {
       setSettings({ ...settings, devMode: true });
-      notify('Developer options on ho gaye (Story tab mein dikhenge)');
+      notify('Developer options on (Story tab)');
     } else if (n >= 2) {
-      notify(`Developer banne mein ${5 - n} tap baaki`);
+      notify(`${5 - n} …`);
     }
   }
 
   const theme = settings.theme || 'light';
+  const ACTS = [['less', '🌱', t('act_less')], ['medium', '🌿', t('act_medium')], ['more', '🌳', t('act_more')]];
 
   return (
     <section aria-labelledby="set-h">
-      <h2 id="set-h">Settings</h2>
+      <h2 id="set-h">⚙️ {t('settings')}</h2>
 
       <div className="card">
-        <h3 style={{ marginTop: 0 }}>Theme</h3>
+        <h3 style={{ marginTop: 0 }}>👤 {t('profile')}{settings.name ? `: ${settings.name}` : ''}</h3>
+        <label className="block">
+          {t('language')}
+          <select value={settings.lang} onChange={(e) => setSettings({ ...settings, lang: e.target.value })}>
+            {LANGS.map((l) => <option key={l.code} value={l.code}>{l.name} · {l.en}</option>)}
+          </select>
+        </label>
+        <fieldset className="seg" style={{ marginTop: 10 }}>
+          <legend>{t('ob_activity')}</legend>
+          {ACTS.map(([v, icon, label]) => (
+            <label key={v} className={settings.activity === v ? 'chip on' : 'chip'}>
+              <input type="radio" name="activity" checked={settings.activity === v} onChange={() => setSettings({ ...settings, activity: v })} />
+              {icon} {label}
+            </label>
+          ))}
+        </fieldset>
+        <button type="button" className="ghost sm" style={{ marginTop: 10 }} onClick={() => setSettings({ ...settings, onboarded: false })}>
+          ✏️ {t('edit_profile')}
+        </button>
+      </div>
+
+      <div className="card">
+        <h3 style={{ marginTop: 0 }}>🎨 {t('theme')}</h3>
         <fieldset className="seg">
-          <legend className="sr-only">Theme chuno</legend>
-          {[['light', '☀️ Light'], ['dark', '🌙 Dark']].map(([v, l]) => (
+          <legend className="sr-only">{t('theme')}</legend>
+          {[['light', `☀️ ${t('light')}`], ['dark', `🌙 ${t('dark')}`]].map(([v, l]) => (
             <label key={v} className={theme === v ? 'chip on' : 'chip'}>
               <input type="radio" name="theme" value={v} checked={theme === v} onChange={() => setSettings({ ...settings, theme: v })} />
               {l}
@@ -44,26 +70,28 @@ export default function SettingsView({ settings, setSettings, hasDemo, onToggleD
         </fieldset>
       </div>
 
+      {lockSlot}
+
       <div className="card settings-list">
-        <h3 style={{ margin: 0 }}>Data</h3>
-        <p className="hint">Data sirf is device pe hai. Doosre device pe: Backup → WhatsApp/Drive → wahan Import.</p>
+        <h3 style={{ margin: 0 }}>💾 {t('data')}</h3>
+        <p className="hint">{t('data_hint')}</p>
         <div className="row wrap">
-          <button type="button" className="primary" onClick={onBackup}>💾 Backup</button>
-          <button type="button" className="ghost" onClick={() => fileRef.current?.click()}>📥 Import</button>
-          <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={onImport} aria-label="Backup file import karo" />
+          <button type="button" className="primary" onClick={onBackup}>💾 {t('backup')}</button>
+          <button type="button" className="ghost" onClick={() => fileRef.current?.click()}>📥 {t('import')}</button>
+          <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={onImport} aria-label={t('import')} />
         </div>
         <div className="row wrap">
           <button type="button" className="ghost" onClick={onToggleDemo}>
-            {hasDemo ? '🧹 Demo data hatao' : '🧪 Demo data try karo'}
+            {hasDemo ? `🧹 ${t('demo_remove')}` : `🧪 ${t('demo_try')}`}
           </button>
         </div>
       </div>
 
       <div className="card settings-list">
-        <button type="button" className="ghost" onClick={onAbout}>ℹ️ About · Made by Pritam</button>
+        <button type="button" className="ghost" onClick={onAbout}>ℹ️ {t('about')}</button>
         {settings.devMode && (
-          <button type="button" className="ghost sm" onClick={() => { setSettings({ ...settings, devMode: false }); setTaps(0); notify('Developer options band'); }}>
-            Developer options band karo
+          <button type="button" className="ghost sm" onClick={() => { setSettings({ ...settings, devMode: false }); setTaps(0); notify('Developer options off'); }}>
+            Developer options off
           </button>
         )}
       </div>

@@ -21,7 +21,10 @@ export function saveTasks(tasks) {
 }
 
 export function loadSettings() {
-  const defaults = { name: '', lang: 'hi' };
+  const defaults = {
+    name: '', lang: 'hi', theme: 'light', activity: 'medium', age: '', sex: '',
+    onboarded: false, devMode: false, storyLang: '',
+  };
   try {
     return { ...defaults, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') };
   } catch {

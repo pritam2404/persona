@@ -11,15 +11,18 @@ import VideosView from './views/VideosView.jsx';
 import About from './views/About.jsx';
 import HomeView from './views/HomeView.jsx';
 import SettingsView from './views/SettingsView.jsx';
+import Onboarding from './views/Onboarding.jsx';
+import { makeT } from './lib/i18n.js';
+import { layoutFor } from './lib/dashboard.js';
 
-// Neeche wala tab bar (icon + chhota naam)
+// Neeche wala tab bar (icon + chhota naam, naam bhasha ke hisaab se)
 const TABS = [
-  { id: 'home', label: 'Home', icon: '🏠', component: HomeView },
-  { id: 'log', label: 'Aaj', icon: '✍️', component: LogView },
-  { id: 'analyse', label: 'Analyse', icon: '📊', component: AnalyseView },
-  { id: 'plan', label: 'Kal', icon: '🗓️', component: PlanView },
-  { id: 'video', label: 'Story', icon: '🎬', component: VideoView },
-  { id: 'videos', label: 'Videos', icon: '📁', component: VideosView },
+  { id: 'home', key: 'tab_home', icon: '🏠', component: HomeView },
+  { id: 'log', key: 'tab_log', icon: '✍️', component: LogView },
+  { id: 'analyse', key: 'tab_analyse', icon: '📊', component: AnalyseView },
+  { id: 'plan', key: 'tab_plan', icon: '🗓️', component: PlanView },
+  { id: 'video', key: 'tab_story', icon: '🎬', component: VideoView },
+  { id: 'videos', key: 'tab_videos', icon: '📁', component: VideosView },
 ];
 
 export default function App() {
@@ -45,7 +48,17 @@ export default function App() {
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0b1020' : '#6366f1');
   }, [theme]);
 
-  const hasDemo = tasks.some((t) => t.id.startsWith('demo-'));
+  const t = makeT(settings.lang);
+  useEffect(() => { document.documentElement.lang = settings.lang || 'hi'; }, [settings.lang]);
+
+  // Activeness: "kam" wale ko kam tabs (simple app)
+  const layout = layoutFor(settings.activity);
+  const visibleTabs = TABS.filter((x) => layout.tabs.includes(x.id));
+  useEffect(() => {
+    if (tab !== 'settings' && !layout.tabs.includes(tab)) setTab('home');
+  }, [tab, layout.tabs]);
+
+  const hasDemo = tasks.some((x) => x.id.startsWith('demo-'));
 
   function goTo(id) {
     setTab(id);
@@ -96,8 +109,18 @@ export default function App() {
     }
   }
 
-  const Active = tab === 'settings' ? null : TABS.find((t) => t.id === tab).component;
-  const shared = { tasks, setTasks, day, setDay, settings, setSettings, notify: setToast, goTo };
+  const Active = tab === 'settings' ? null : (TABS.find((x) => x.id === tab) || TABS[0]).component;
+  const shared = { tasks, setTasks, day, setDay, settings, setSettings, notify: setToast, goTo, t, layout };
+
+  // Pehli baar: setup screens (bhasha, naam, umar/gender, activeness)
+  if (!settings.onboarded) {
+    return (
+      <Onboarding
+        settings={settings}
+        onDone={(profile) => { setSettings((s) => ({ ...s, ...profile })); setTab('home'); }}
+      />
+    );
+  }
 
   return (
     <div className="app">
@@ -106,7 +129,7 @@ export default function App() {
           <img src="./icon-192.png" alt="" />
           <span>
             <span className="brand-name">Persona</span>
-            <small>Aaj likho · Kal behtar</small>
+            <small>{t('tagline')}</small>
           </span>
         </button>
         <div className="row">
@@ -135,6 +158,7 @@ export default function App() {
         {showAbout && <About onClose={() => setShowAbout(false)} />}
         {tab === 'settings' ? (
           <SettingsView
+            t={t}
             settings={settings}
             setSettings={setSettings}
             hasDemo={hasDemo}
@@ -151,18 +175,18 @@ export default function App() {
 
       <div className="toast" role="status" aria-live="polite">{toast}</div>
 
-      <nav className="tabs" role="tablist" aria-label="Sections">
-        {TABS.map((t) => (
+      <nav className="tabs" role="tablist" aria-label="Sections" style={{ gridTemplateColumns: `repeat(${visibleTabs.length}, 1fr)` }}>
+        {visibleTabs.map((x) => (
           <button
-            key={t.id}
+            key={x.id}
             type="button"
             role="tab"
-            aria-selected={tab === t.id}
-            className={tab === t.id ? 'tab active' : 'tab'}
-            onClick={() => goTo(t.id)}
+            aria-selected={tab === x.id}
+            className={tab === x.id ? 'tab active' : 'tab'}
+            onClick={() => goTo(x.id)}
           >
-            <span className="ti" aria-hidden="true">{t.icon}</span>
-            {t.label}
+            <span className="ti" aria-hidden="true">{x.icon}</span>
+            {t(x.key)}
           </button>
         ))}
       </nav>

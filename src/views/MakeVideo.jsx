@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { VOICES } from '../lib/voices.js';
+import { VOICES, defaultVoice } from '../lib/voices.js';
 import { canMakeVideo, makeVideo } from '../lib/videoMaker.js';
 import { addVideo } from '../lib/videoStore.js';
 
 /**
  * Ek click: script -> AI awaaz + photo + captions -> video file (phone/PC dono pe).
  * Photo sirf is device pe rehti hai, kahin upload nahi hoti.
+ * `spoken` = awaaz ke liye alag lines (jab story ki bhasha ki awaaz nahi, tab English).
  */
-export default function MakeVideo({ title, beats, lang, day, notify }) {
-  const voices = VOICES[lang] || VOICES.hi;
-  const [voiceId, setVoiceId] = useState(voices[0].id);
+export default function MakeVideo({ t, title, beats, spoken, lang, voiceLang, sex, day, notify }) {
+  const voices = VOICES[voiceLang] || VOICES.hi;
+  const [voiceId, setVoiceId] = useState(() => defaultVoice(voiceLang, sex));
   const [photo, setPhoto] = useState(null);
   const [photoUrl, setPhotoUrl] = useState('');
   const [status, setStatus] = useState(null);
@@ -19,10 +20,10 @@ export default function MakeVideo({ title, beats, lang, day, notify }) {
   const canvasRef = useRef(null);
   const supported = canMakeVideo();
 
-  // Bhasha badli -> us bhasha ki pehli awaaz
+  // Bhasha badli -> us bhasha ki (gender ke hisaab se) default awaaz
   useEffect(() => {
-    if (!voices.some((v) => v.id === voiceId)) setVoiceId(voices[0].id);
-  }, [voices, voiceId]);
+    if (!voices.some((v) => v.id === voiceId)) setVoiceId(defaultVoice(voiceLang, sex));
+  }, [voices, voiceId, voiceLang, sex]);
 
   useEffect(() => () => {
     if (photoUrl) URL.revokeObjectURL(photoUrl);
@@ -48,7 +49,7 @@ export default function MakeVideo({ title, beats, lang, day, notify }) {
     setResult(null);
     try {
       const out = await makeVideo({
-        title, beats, lang, voiceId, photo, audioContext,
+        title, beats, spoken, lang, speechLang: voiceLang, voiceId, photo, audioContext,
         signal: ac.signal,
         preview: canvasRef.current,
         onStatus: setStatus,
@@ -99,20 +100,20 @@ export default function MakeVideo({ title, beats, lang, day, notify }) {
 
   return (
     <div className="card make-video" aria-labelledby="mk-h">
-      <h3 id="mk-h">Ek click mein video</h3>
-      <p className="hint">Awaaz, photo aur captions ke saath video isi phone/PC pe banta hai. Python ya terminal ki zaroorat nahi.</p>
+      <h3 id="mk-h">{t('make_video')}</h3>
+      <p className="hint">{t('make_video_sub')}</p>
 
       <div className="form">
         <label>
-          Awaaz
+          {t('voice')}
           <select value={voiceId} onChange={(e) => setVoiceId(e.target.value)} disabled={busy}>
-            {voices.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
+            {voices.map((v) => <option key={v.id} value={v.id}>{v.label} ({v.gender === 'female' ? '♀' : '♂'})</option>)}
           </select>
         </label>
         <div className="photo-pick">
-          <span className="hint">Photo (optional)</span>
+          <span className="hint">{t('photo_opt')}</span>
           <label className={busy ? 'ghost btn-like disabled' : 'ghost btn-like'}>
-            {photo ? 'Photo badlo' : '+ Photo chuno'}
+            {photo ? t('change_photo') : t('choose_photo')}
             <input type="file" accept="image/*" hidden disabled={busy} onChange={pickPhoto} />
           </label>
           {photoUrl && <img src={photoUrl} alt="Chuni hui photo" className="thumb" />}
@@ -121,7 +122,7 @@ export default function MakeVideo({ title, beats, lang, day, notify }) {
 
       <div className="row wrap">
         <button type="button" className="primary big-btn" onClick={start} disabled={busy}>
-          {busy ? 'Video ban raha hai…' : '🎬 Video banao'}
+          {busy ? t('video_busy') : t('video_btn')}
         </button>
         {busy && (
           <button type="button" className="ghost" onClick={() => abortRef.current?.abort()}>Cancel</button>
