@@ -14,6 +14,7 @@ import SettingsView from './views/SettingsView.jsx';
 import Onboarding from './views/Onboarding.jsx';
 import { makeT } from './lib/i18n.js';
 import { layoutFor } from './lib/dashboard.js';
+import ChatPanel from './views/ChatPanel.jsx';
 
 // Neeche wala tab bar (icon + chhota naam, naam bhasha ke hisaab se)
 const TABS = [
@@ -174,6 +175,8 @@ export default function App() {
       </main>
 
       <div className="toast" role="status" aria-live="polite">{toast}</div>
+
+      <ChatPanel t={t} tasks={tasks} settings={settings} />
 
       <nav className="tabs" role="tablist" aria-label="Sections" style={{ gridTemplateColumns: `repeat(${visibleTabs.length}, 1fr)` }}>
         {visibleTabs.map((x) => (

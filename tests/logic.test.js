@@ -246,3 +246,46 @@ test('activeness layout + voice choice', () => {
   assert.equal(defaultVoice('hi', ''), 'hi_IN-priyamvada-medium');
   assert.equal(defaultVoice('kn', 'male'), 'en_GB-alan-medium');
 });
+
+import { buildContext, pickModel, parseAnswer, shortAnswer, systemPrompt, looksLikeKey } from '../src/lib/chat.js';
+
+test('chat context never leaks office/private titles or notes', () => {
+  const tasks = makeDemoTasks(TODAY, 10);
+  tasks.push({ ...tasks[0], id: 'p2', title: 'Doctor visit SECRET', private: true, date: TODAY, status: 'skipped', note: 'my bank pin 1234' });
+  tasks.push({ ...tasks[1], id: 'o2', title: 'Project Falcon review', area: 'office', private: true, date: TODAY, note: 'confidential client' });
+  const ctx = buildContext(tasks, { name: 'Pritam', age: 30, lang: 'hi' }, TODAY);
+  for (const secret of ['Audit queue', 'SOP doubt', 'Team standup', 'Email + Slack', 'SECRET', 'Falcon', 'bank pin', 'confidential']) {
+    assert.ok(!ctx.includes(secret), `context leaked "${secret}"`);
+  }
+  assert.ok(ctx.includes('an office task'));
+  assert.ok(ctx.includes('Morning walk')); // personal, non-private = ok
+  assert.ok(ctx.includes('Pritam') && ctx.includes('streak'));
+});
+
+test('pickModel prefers newest plain flash model', () => {
+  const gen = ['generateContent'];
+  const models = [
+    { name: 'models/gemini-1.5-flash', supportedGenerationMethods: gen },
+    { name: 'models/gemini-2.5-flash', supportedGenerationMethods: gen },
+    { name: 'models/gemini-2.5-flash-image', supportedGenerationMethods: gen },
+    { name: 'models/gemini-3-flash', supportedGenerationMethods: gen },
+    { name: 'models/gemini-3-pro', supportedGenerationMethods: gen },
+    { name: 'models/text-embedding-004', supportedGenerationMethods: ['embedContent'] },
+  ];
+  assert.equal(pickModel(models), 'gemini-3-flash');
+  assert.equal(pickModel([]), 'gemini-3.8-flash');
+  assert.equal(pickModel([{ name: 'models/gemini-3.8-flash', supportedGenerationMethods: gen }, ...models]), 'gemini-3.8-flash');
+});
+
+test('parseAnswer skips thoughts; shortAnswer keeps it short', () => {
+  const j = { candidates: [{ content: { parts: [{ text: 'thinking...', thought: true }, { text: 'Subah 9 baje karo.' }] } }] };
+  assert.equal(parseAnswer(j), 'Subah 9 baje karo.');
+  assert.throws(() => parseAnswer({ candidates: [{ finishReason: 'SAFETY' }] }), /SAFETY/);
+  const long = 'One. Two. Three. Four. Five. Six.';
+  assert.equal(shortAnswer(long), 'One. Two. Three. Four.');
+  assert.equal(shortAnswer('## Title\n**Bold** answer.'), 'Title Bold answer.');
+  assert.ok(systemPrompt('ta').includes('Tamil'));
+  assert.ok(systemPrompt('hi').includes('Hinglish'));
+  assert.equal(looksLikeKey('short'), false);
+  assert.equal(looksLikeKey('AIzaSyD-abcdefghijklmnopqrstuvwxyz12345'), true);
+});
