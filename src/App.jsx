@@ -1,5 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { loadTasks, saveTasks, loadSettings, saveSettings, downloadFile } from './lib/storage.js';
+import { isLockEnabled, encryptJSON } from './lib/lock.js';
+import LockScreen from './views/LockScreen.jsx';
+import LockSettings from './views/LockSettings.jsx';
+
+const encryptForSave = async (key, tasks) => JSON.stringify(await encryptJSON(key, tasks));
 import { parseImport, mergeTasks } from './lib/model.js';
 import { isoDate } from './lib/time.js';
 import { makeDemoTasks } from './lib/demo.js';
@@ -26,15 +31,51 @@ const TABS = [
   { id: 'videos', key: 'tab_videos', icon: '📁', component: VideosView },
 ];
 
+const AUTO_LOCK_MS = 60 * 1000; // app 1 min background mein raha -> wapas aane pe PIN
+
 export default function App() {
-  const [tasks, setTasks] = useState(loadTasks);
+  // Lock on ho to tasks memory mein tabhi aate hain jab PIN sahi ho
+  const [lockOn, setLockOn] = useState(isLockEnabled);
+  const [locked, setLocked] = useState(isLockEnabled);
+  const keyRef = useRef(null);
+  const saveSeq = useRef(0);
+  const [tasks, setTasks] = useState(() => (isLockEnabled() ? [] : loadTasks()));
   const [settings, setSettings] = useState(loadSettings);
   const [tab, setTab] = useState('home');
   const [day, setDay] = useState(isoDate());
   const [toast, setToast] = useState('');
   const [showAbout, setShowAbout] = useState(false);
 
-  useEffect(() => saveTasks(tasks), [tasks]);
+  // Save: lock on -> encrypted (sirf unlocked hone pe), warna plain
+  useEffect(() => {
+    if (locked) return; // locked = memory khaali hai, kabhi overwrite mat karo
+    if (lockOn && keyRef.current) {
+      const seq = ++saveSeq.current;
+      const key = keyRef.current;
+      // purana save naye ke baad khatam ho to bhi naya hi bache: sirf latest likho
+      encryptForSave(key, tasks).then((blob) => {
+        if (seq === saveSeq.current && keyRef.current === key) localStorage.setItem('persona.tasks.enc.v1', blob);
+      });
+    } else if (!lockOn) {
+      saveTasks(tasks);
+    }
+  }, [tasks, locked, lockOn]);
+
+  // Auto-lock: app chhupa (dusri app / screen off) 1 min se zyada -> lock
+  useEffect(() => {
+    if (!lockOn) return undefined;
+    let hiddenAt = 0;
+    const onVis = () => {
+      if (document.hidden) hiddenAt = Date.now();
+      else if (hiddenAt && Date.now() - hiddenAt > AUTO_LOCK_MS) {
+        keyRef.current = null;
+        setLocked(true);
+        setTasks([]);
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [lockOn]);
   useEffect(() => saveSettings(settings), [settings]);
   useEffect(() => {
     if (!toast) return undefined;
@@ -113,6 +154,20 @@ export default function App() {
   const Active = tab === 'settings' ? null : (TABS.find((x) => x.id === tab) || TABS[0]).component;
   const shared = { tasks, setTasks, day, setDay, settings, setSettings, notify: setToast, goTo, t, layout };
 
+  // App lock: sabse pehle PIN
+  if (lockOn && locked) {
+    return (
+      <LockScreen
+        t={t}
+        onUnlocked={(key, unlockedTasks) => {
+          keyRef.current = key;
+          setTasks(unlockedTasks);
+          setLocked(false);
+        }}
+      />
+    );
+  }
+
   // Pehli baar: setup screens (bhasha, naam, umar/gender, activeness)
   if (!settings.onboarded) {
     return (
@@ -168,6 +223,16 @@ export default function App() {
             onImport={importData}
             onAbout={() => { setShowAbout(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             notify={setToast}
+            lockSlot={(
+              <LockSettings
+                t={t}
+                enabled={lockOn}
+                tasks={tasks}
+                notify={setToast}
+                onEnabled={(key) => { keyRef.current = key; setLockOn(true); }}
+                onDisabled={() => { keyRef.current = null; setLockOn(false); }}
+              />
+            )}
           />
         ) : (
           <Active key={tab} {...shared} />

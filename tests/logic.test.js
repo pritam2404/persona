@@ -289,3 +289,65 @@ test('parseAnswer skips thoughts; shortAnswer keeps it short', () => {
   assert.equal(looksLikeKey('short'), false);
   assert.equal(looksLikeKey('AIzaSyD-abcdefghijklmnopqrstuvwxyz12345'), true);
 });
+
+import { validPin, enableLock, unlock, saveEncrypted, disableLock, isLockEnabled, lockoutSeconds, resetEverything } from '../src/lib/lock.js';
+
+function memStore() {
+  const m = new Map();
+  return {
+    getItem: (k) => (m.has(k) ? m.get(k) : null),
+    setItem: (k, v) => m.set(k, String(v)),
+    removeItem: (k) => m.delete(k),
+    key: (i) => [...m.keys()][i] ?? null,
+    get length() { return m.size; },
+    dump: () => [...m.values()].join('\n'),
+  };
+}
+
+test('lock: tasks are really encrypted, right PIN opens, wrong PIN fails', async () => {
+  const s = memStore();
+  s.setItem('persona.tasks.v1', JSON.stringify([{ title: 'SECRET DIARY' }]));
+  const tasks = [{ id: 't1', title: 'SECRET DIARY' }];
+  const key = await enableLock('2468', tasks, s);
+  assert.ok(isLockEnabled(s));
+  assert.equal(s.getItem('persona.tasks.v1'), null); // plain copy gayi
+  assert.ok(!s.dump().includes('SECRET'), 'plain text found in storage');
+  assert.ok(!s.dump().includes('2468'), 'PIN stored');
+
+  const ok = await unlock('2468', s);
+  assert.equal(ok.tasks[0].title, 'SECRET DIARY');
+  await assert.rejects(unlock('1111', s), (e) => e.wrong === true);
+
+  await saveEncrypted(key, [...tasks, { id: 't2', title: 'NEW ONE' }], s);
+  assert.equal((await unlock('2468', s)).tasks.length, 2);
+  assert.ok(!s.dump().includes('NEW ONE'));
+
+  disableLock([{ id: 't1' }], s);
+  assert.equal(isLockEnabled(s), false);
+  assert.ok(s.getItem('persona.tasks.v1'));
+});
+
+test('lock: PIN rules + lockout after 5 wrong tries', async () => {
+  assert.equal(validPin('123'), false);
+  assert.equal(validPin('1234'), true);
+  assert.equal(validPin('123456'), true);
+  assert.equal(validPin('12a4'), false);
+  const s = memStore();
+  await enableLock('9999', [], s);
+  const now = 1_000_000;
+  for (let i = 0; i < 5; i += 1) await assert.rejects(unlock('0000', s, now));
+  assert.equal(lockoutSeconds(s, now), 30);
+  await assert.rejects(unlock('9999', s, now), (e) => e.wait === 30); // sahi PIN bhi wait mein nahi chalega
+  assert.equal((await unlock('9999', s, now + 31_000)).tasks.length, 0);
+  await assert.rejects(enableLock('12', [], s));
+});
+
+test('resetEverything removes only persona data', async () => {
+  const s = memStore();
+  s.setItem('persona.tasks.v1', '[]');
+  s.setItem('persona.lock.v1', '{}');
+  s.setItem('other.app', 'keep');
+  await resetEverything(s);
+  assert.equal(s.getItem('persona.tasks.v1'), null);
+  assert.equal(s.getItem('other.app'), 'keep');
+});

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { LANGS } from '../lib/i18n.js';
 
-export const APP_VERSION = '2.0.0';
+export const APP_VERSION = '2.1.0';
 
 /**
  * Settings: profile + bhasha, theme, data (backup/import/demo), app lock, about.
@@ -24,23 +24,23 @@ export default function SettingsView({
       setSettings({ ...settings, devMode: true });
       notify('Developer options on (Story tab)');
     } else if (n >= 2) {
-      notify(`${5 - n} …`);
+      notify(`${5 - n} â€¦`);
     }
   }
 
   const theme = settings.theme || 'light';
-  const ACTS = [['less', '🌱', t('act_less')], ['medium', '🌿', t('act_medium')], ['more', '🌳', t('act_more')]];
+  const ACTS = [['less', 'ðŸŒ±', t('act_less')], ['medium', 'ðŸŒ¿', t('act_medium')], ['more', 'ðŸŒ³', t('act_more')]];
 
   return (
     <section aria-labelledby="set-h">
-      <h2 id="set-h">⚙️ {t('settings')}</h2>
+      <h2 id="set-h">âš™ï¸ {t('settings')}</h2>
 
       <div className="card">
-        <h3 style={{ marginTop: 0 }}>👤 {t('profile')}{settings.name ? `: ${settings.name}` : ''}</h3>
+        <h3 style={{ marginTop: 0 }}>ðŸ‘¤ {t('profile')}{settings.name ? `: ${settings.name}` : ''}</h3>
         <label className="block">
           {t('language')}
           <select value={settings.lang} onChange={(e) => setSettings({ ...settings, lang: e.target.value })}>
-            {LANGS.map((l) => <option key={l.code} value={l.code}>{l.name} · {l.en}</option>)}
+            {LANGS.map((l) => <option key={l.code} value={l.code}>{l.name} Â· {l.en}</option>)}
           </select>
         </label>
         <fieldset className="seg" style={{ marginTop: 10 }}>
@@ -53,15 +53,15 @@ export default function SettingsView({
           ))}
         </fieldset>
         <button type="button" className="ghost sm" style={{ marginTop: 10 }} onClick={() => setSettings({ ...settings, onboarded: false })}>
-          ✏️ {t('edit_profile')}
+          âœï¸ {t('edit_profile')}
         </button>
       </div>
 
       <div className="card">
-        <h3 style={{ marginTop: 0 }}>🎨 {t('theme')}</h3>
+        <h3 style={{ marginTop: 0 }}>ðŸŽ¨ {t('theme')}</h3>
         <fieldset className="seg">
           <legend className="sr-only">{t('theme')}</legend>
-          {[['light', `☀️ ${t('light')}`], ['dark', `🌙 ${t('dark')}`]].map(([v, l]) => (
+          {[['light', `â˜€ï¸ ${t('light')}`], ['dark', `ðŸŒ™ ${t('dark')}`]].map(([v, l]) => (
             <label key={v} className={theme === v ? 'chip on' : 'chip'}>
               <input type="radio" name="theme" value={v} checked={theme === v} onChange={() => setSettings({ ...settings, theme: v })} />
               {l}
@@ -73,22 +73,22 @@ export default function SettingsView({
       {lockSlot}
 
       <div className="card settings-list">
-        <h3 style={{ margin: 0 }}>💾 {t('data')}</h3>
+        <h3 style={{ margin: 0 }}>ðŸ’¾ {t('data')}</h3>
         <p className="hint">{t('data_hint')}</p>
         <div className="row wrap">
-          <button type="button" className="primary" onClick={onBackup}>💾 {t('backup')}</button>
-          <button type="button" className="ghost" onClick={() => fileRef.current?.click()}>📥 {t('import')}</button>
+          <button type="button" className="primary" onClick={onBackup}>ðŸ’¾ {t('backup')}</button>
+          <button type="button" className="ghost" onClick={() => fileRef.current?.click()}>ðŸ“¥ {t('import')}</button>
           <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={onImport} aria-label={t('import')} />
         </div>
         <div className="row wrap">
           <button type="button" className="ghost" onClick={onToggleDemo}>
-            {hasDemo ? `🧹 ${t('demo_remove')}` : `🧪 ${t('demo_try')}`}
+            {hasDemo ? `ðŸ§¹ ${t('demo_remove')}` : `ðŸ§ª ${t('demo_try')}`}
           </button>
         </div>
       </div>
 
       <div className="card settings-list">
-        <button type="button" className="ghost" onClick={onAbout}>ℹ️ {t('about')}</button>
+        <button type="button" className="ghost" onClick={onAbout}>â„¹ï¸ {t('about')}</button>
         {settings.devMode && (
           <button type="button" className="ghost sm" onClick={() => { setSettings({ ...settings, devMode: false }); setTaps(0); notify('Developer options off'); }}>
             Developer options off
@@ -98,7 +98,7 @@ export default function SettingsView({
 
       <p style={{ textAlign: 'center' }}>
         <button type="button" className="version-tap" onClick={tapVersion} aria-label={`Version ${APP_VERSION}`}>
-          Persona v{APP_VERSION}{settings.devMode ? ' · developer' : ''}
+          Persona v{APP_VERSION}{settings.devMode ? ' Â· developer' : ''}
         </button>
       </p>
     </section>
