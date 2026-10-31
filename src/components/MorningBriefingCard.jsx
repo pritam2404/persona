@@ -4,14 +4,11 @@ import { fireConfetti } from '../utils/confetti.ts';
 import { isoDate, addDays } from '../lib/time.js';
 import { loadPrioritiesPlan, savePrioritiesPlan } from '../lib/storage.js';
 import FocusTimerModal from './FocusTimerModal.jsx';
-import VoicePriorityRecorder from './VoicePriorityRecorder.jsx';
 
 export default function MorningBriefingCard({
   t,
   todayPlan,
   setTodayPlan,
-  tasks = [],
-  setTasks,
   notify,
   goToPlan,
   lang = 'hi',
@@ -19,7 +16,6 @@ export default function MorningBriefingCard({
   const [activeFocusTask, setActiveFocusTask] = useState(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [showAddQuick, setShowAddQuick] = useState(false);
-  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const [quickTitle, setQuickTitle] = useState('');
   const [quickSlot, setQuickSlot] = useState('morning');
   const [quickMin, setQuickMin] = useState(45);
@@ -30,12 +26,9 @@ export default function MorningBriefingCard({
   const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   function toggleTaskComplete(id) {
-    const target = priorities.find((p) => p.id === id);
-    if (!target) return;
-    const nextState = !target.completed;
-
     const updated = priorities.map((p) => {
       if (p.id === id) {
+        const nextState = !p.completed;
         if (nextState) {
           soundEngine.playTaskCompleteSound(true);
         }
@@ -52,55 +45,12 @@ export default function MorningBriefingCard({
     setTodayPlan(newPlan);
     savePrioritiesPlan(todayPlan.date, newPlan);
 
-    // Sync directly to global tasks so consistency %, streak, and tasks-done immediately spike!
-    if (setTasks) {
-      setTasks((prev) => {
-        const taskId = `ptask-${target.id}`;
-        if (nextState) {
-          const nowHour = new Date().getHours();
-          const startStr = `${String(nowHour).padStart(2, '0')}:00`;
-          const endStr = `${String(Math.min(23, nowHour + 1)).padStart(2, '0')}:00`;
-          const newTask = {
-            id: taskId,
-            date: todayPlan.date,
-            title: target.title,
-            area: target.area || 'office',
-            category: target.category || 'Deep work',
-            start: startStr,
-            end: endStr,
-            estMin: target.estMin || 45,
-            energy: target.energy || 5,
-            status: 'done',
-            note: 'Target achieved via Morning Priority Briefing',
-            private: target.area === 'office',
-          };
-          const exists = prev.some((x) => x.id === taskId);
-          return exists ? prev.map((x) => (x.id === taskId ? newTask : x)) : [...prev, newTask];
-        } else {
-          return prev.filter((x) => x.id !== taskId);
-        }
-      });
-    }
-
     // If all completed, trigger confetti!
     const nowDone = updated.filter((p) => p.completed).length;
     if (nowDone === updated.length && updated.length > 0) {
       fireConfetti();
-      notify('🎉 100% Targets Achieved! Shabash!');
+      notify('🎉 Shabash! Aaj ke saare top priorities poore hue!');
     }
-  }
-
-  function handleVoiceAddPriorities(items) {
-    const newItems = items.map((it, idx) => ({
-      ...it,
-      id: `p-${todayPlan.date}-${Date.now().toString(36)}-${idx}`,
-      rank: priorities.length + idx + 1,
-    }));
-    const updated = [...priorities, ...newItems];
-    const newPlan = { ...todayPlan, priorities: updated };
-    setTodayPlan(newPlan);
-    savePrioritiesPlan(todayPlan.date, newPlan);
-    notify(`🎙️ ${newItems.length} priorities voice se jodi gayi!`);
   }
 
   function handleMoveToTomorrow(id) {
@@ -182,15 +132,7 @@ export default function MorningBriefingCard({
     soundEngine.playMorningChime(true);
 
     let speechText = '';
-    if (lang === 'bn') {
-      speechText = `সুপ্রভাত! আজকের আপনার প্রধান কাজগুলো হলো: ${
-        priorities.length === 0
-          ? 'আজকের জন্য এখনো কোনো প্রায়োরিটি ঠিক করা নেই।'
-          : priorities
-              .map((p, idx) => `নম্বর ${idx + 1}: ${p.title}, আনুমানিক ${p.estMin} মিনিট।`)
-              .join(' ')
-      } মন দিয়ে দিনটি শুরু করুন এবং সফল হন!`;
-    } else if (lang === 'hi') {
+    if (lang === 'hi') {
       speechText = `Shubh Prabhat! Aaj ki aapki top priorities hain: ${
         priorities.length === 0
           ? 'Abhi tak koi priority tay nahi hai.'
@@ -209,7 +151,7 @@ export default function MorningBriefingCard({
     }
 
     setIsSpeaking(true);
-    soundEngine.speakText(speechText, lang === 'bn' ? 'bn' : lang === 'hi' ? 'hi' : 'en');
+    soundEngine.speakText(speechText, lang === 'hi' ? 'hi' : 'en');
 
     setTimeout(() => {
       setIsSpeaking(false);
@@ -441,31 +383,15 @@ export default function MorningBriefingCard({
           </div>
         </form>
       ) : (
-        <div className="row wrap" style={{ justifyContent: 'space-between', gap: 8, marginBottom: 14 }}>
-          <div className="row wrap" style={{ gap: 6 }}>
-            <button
-              type="button"
-              className="ghost sm"
-              onClick={() => setShowAddQuick(true)}
-              style={{ fontSize: '0.82rem' }}
-            >
-              {t('priority_quick_add')}
-            </button>
-            <button
-              type="button"
-              className="chip on"
-              onClick={() => setShowVoiceRecorder(true)}
-              style={{
-                fontSize: '0.82rem',
-                padding: '4px 10px',
-                background: 'var(--grad-fire)',
-                cursor: 'pointer',
-              }}
-              title="Voice Note"
-            >
-              {t('voice_record_btn')}
-            </button>
-          </div>
+        <div className="row wrap" style={{ justifyContent: 'space-between', marginBottom: 14 }}>
+          <button
+            type="button"
+            className="ghost sm"
+            onClick={() => setShowAddQuick(true)}
+            style={{ fontSize: '0.82rem' }}
+          >
+            {t('priority_quick_add')}
+          </button>
           <button
             type="button"
             className="ghost sm"
@@ -475,17 +401,6 @@ export default function MorningBriefingCard({
             🌙 Kal Ki Planning (Night Routine) →
           </button>
         </div>
-      )}
-
-      {/* Voice Priority Recorder Modal */}
-      {showVoiceRecorder && (
-        <VoicePriorityRecorder
-          isOpen={showVoiceRecorder}
-          onClose={() => setShowVoiceRecorder(false)}
-          onAddPriorities={handleVoiceAddPriorities}
-          lang={lang}
-          t={t}
-        />
       )}
 
       {/* Morning Kickstart Habits */}

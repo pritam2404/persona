@@ -4,7 +4,6 @@ import { durationMin, fmtDuration, isoDate, addDays } from '../lib/time.js';
 import { loadPrioritiesPlan, savePrioritiesPlan } from '../lib/storage.js';
 import { soundEngine } from '../utils/audio.ts';
 import { fireConfetti } from '../utils/confetti.ts';
-import VoicePriorityRecorder from '../components/VoicePriorityRecorder.jsx';
 
 const CONF = { low: 'Kam bharosa', medium: 'Theek bharosa', high: 'Achha bharosa' };
 
@@ -19,8 +18,7 @@ export default function PlanView({
 }) {
   const tomorrowDate = addDays(isoDate(), 1);
   const [targetDate, setTargetDate] = useState(tomorrowDate);
-  const [planData, setPlanData] = useState(() => loadPrioritiesPlan(tomorrowDate, tasks, settings?.lang));
-  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
+  const [planData, setPlanData] = useState(() => loadPrioritiesPlan(tomorrowDate));
 
   // Automated suggestions based on past habits
   const suggestedPlan = planTomorrow(tasks, day);
@@ -34,29 +32,14 @@ export default function PlanView({
   const [energy, setEnergy] = useState(5);
   const [notes, setNotes] = useState('');
 
-  // Sync planData when targetDate changes or language changes
+  // Sync planData when targetDate changes
   useEffect(() => {
-    setPlanData(loadPrioritiesPlan(targetDate, tasks, settings?.lang));
-  }, [targetDate, settings?.lang]);
+    setPlanData(loadPrioritiesPlan(targetDate));
+  }, [targetDate]);
 
   function handleSavePlan(updated) {
     setPlanData(updated);
     savePrioritiesPlan(targetDate, updated);
-  }
-
-  function handleVoiceAddPriorities(items) {
-    const priorities = planData.priorities || [];
-    const newItems = items.map((it, idx) => ({
-      ...it,
-      id: `p-${targetDate}-${Date.now().toString(36)}-${idx}`,
-      rank: priorities.length + idx + 1,
-    }));
-    const updated = {
-      ...planData,
-      priorities: [...priorities, ...newItems],
-    };
-    handleSavePlan(updated);
-    notify(`🎙️ ${newItems.length} priorities voice se jodi gayi!`);
   }
 
   function handleAddPriority(e) {
@@ -303,29 +286,13 @@ export default function PlanView({
             </p>
           </div>
           {!planData.sealed && (
-            <div className="row wrap" style={{ gap: 6 }}>
-              <button
-                type="button"
-                className="chip on"
-                onClick={() => setShowVoiceRecorder(true)}
-                style={{
-                  fontSize: '0.82rem',
-                  padding: '4px 10px',
-                  background: 'var(--grad-fire)',
-                  cursor: 'pointer',
-                }}
-                title="Voice Note"
-              >
-                {t('voice_record_btn')}
-              </button>
-              <button
-                type="button"
-                className="primary sm"
-                onClick={() => setIsAdding(true)}
-              >
-                + Naya Kaam
-              </button>
-            </div>
+            <button
+              type="button"
+              className="primary sm"
+              onClick={() => setIsAdding(true)}
+            >
+              + Naya Kaam
+            </button>
           )}
         </div>
 
@@ -604,17 +571,6 @@ export default function PlanView({
             : 'Plan seal karte hi dimaag khali ho jayega aur aap shanti se so sakenge.'}
         </p>
       </div>
-
-      {/* Voice Priority Recorder Modal */}
-      {showVoiceRecorder && (
-        <VoicePriorityRecorder
-          isOpen={showVoiceRecorder}
-          onClose={() => setShowVoiceRecorder(false)}
-          onAddPriorities={handleVoiceAddPriorities}
-          lang={settings?.lang}
-          t={t}
-        />
-      )}
     </section>
   );
 }
