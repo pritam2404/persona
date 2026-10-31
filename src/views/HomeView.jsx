@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { isoDate, fmtDuration } from '../lib/time.js';
 import { tasksOn, summarize, insights } from '../lib/analyze.js';
 import { streak, consistency, weekCompare, trend, topTaskToday, energyTrend, encouragement } from '../lib/dashboard.js';
+import { loadPrioritiesPlan } from '../lib/storage.js';
+import MorningBriefingCard from '../components/MorningBriefingCard.jsx';
 
 const ARROW = { up: '↑', down: '↓', same: '→' };
 
@@ -58,7 +60,7 @@ function scoreKey(s) {
   return 'score_none';
 }
 
-export default function HomeView({ tasks, goTo, settings, t, layout }) {
+export default function HomeView({ tasks, goTo, settings, t, layout, notify }) {
   const today = isoDate();
   const todays = tasksOn(tasks, today);
   const s = summarize(todays);
@@ -72,6 +74,7 @@ export default function HomeView({ tasks, goTo, settings, t, layout }) {
   const pct = (x) => `${Math.round(x * 100)}%`;
   const scoreShown = useCountUp(c.score);
   const streakShown = useCountUp(st.current, 600);
+  const [todayPlan, setTodayPlan] = useState(() => loadPrioritiesPlan(today));
 
   return (
     <section aria-labelledby="home-h">
@@ -79,6 +82,16 @@ export default function HomeView({ tasks, goTo, settings, t, layout }) {
         <h2 id="home-h">{t(greetKey())}{name ? ', ' : ''}<span className="grad-text">{name}</span> 👋</h2>
         <p className="muted home-msg">{encouragement(st, todays.length, settings.lang)}</p>
       </div>
+
+      {/* Subah Ka Priority Briefing & Action Hub */}
+      <MorningBriefingCard
+        t={t}
+        todayPlan={todayPlan}
+        setTodayPlan={setTodayPlan}
+        notify={notify}
+        goToPlan={() => goTo('plan')}
+        lang={settings.lang}
+      />
 
       {/* 1. Aaj */}
       <div className="card home-today">

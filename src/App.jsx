@@ -20,6 +20,7 @@ import Onboarding from './views/Onboarding.jsx';
 import { makeT } from './lib/i18n.js';
 import { layoutFor } from './lib/dashboard.js';
 import ChatPanel from './views/ChatPanel.jsx';
+import { soundEngine } from './utils/audio.ts';
 
 // Neeche wala tab bar (icon + chhota naam, naam bhasha ke hisaab se)
 const TABS = [
@@ -45,6 +46,7 @@ export default function App() {
   const [day, setDay] = useState(isoDate());
   const [toast, setToast] = useState('');
   const [showAbout, setShowAbout] = useState(false);
+  const [reminderAlert, setReminderAlert] = useState(null);
 
   // Save: lock on -> encrypted (sirf unlocked hone pe), warna plain
   useEffect(() => {
@@ -52,7 +54,6 @@ export default function App() {
     if (lockOn && keyRef.current) {
       const seq = ++saveSeq.current;
       const key = keyRef.current;
-      // purana save naye ke baad khatam ho to bhi naya hi bache: sirf latest likho
       encryptForSave(key, tasks).then((blob) => {
         if (seq === saveSeq.current && keyRef.current === key) localStorage.setItem('persona.tasks.enc.v1', blob);
       });
@@ -76,12 +77,53 @@ export default function App() {
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
   }, [lockOn]);
+
   useEffect(() => saveSettings(settings), [settings]);
+
   useEffect(() => {
     if (!toast) return undefined;
     const id = setTimeout(() => setToast(''), 3500);
     return () => clearTimeout(id);
   }, [toast]);
+
+  // Night planning reminder background monitor
+  function triggerReminderAlert() {
+    soundEngine.playEveningChime(settings?.nightReminderSound !== false);
+
+    setReminderAlert({
+      time: settings?.nightReminderTime || '21:30',
+      message: 'Kal ke top 3 priorities plan karke sukoon se soiye!',
+    });
+
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      try {
+        new Notification('Persona: 🌙 Raat Ki Planning', {
+          body: 'Kal ke top priorities plan karke sukoon se soiye.',
+          icon: './icon-192.png',
+        });
+      } catch {
+        // Notification API fallback
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (!settings?.nightReminderEnabled) return undefined;
+
+    const checkReminder = () => {
+      const now = new Date();
+      const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const todayStr = isoDate();
+
+      if (currentHHMM === settings.nightReminderTime && settings.lastReminderFiredDate !== todayStr) {
+        setSettings((prev) => ({ ...prev, lastReminderFiredDate: todayStr }));
+        triggerReminderAlert();
+      }
+    };
+
+    const interval = setInterval(checkReminder, 15000);
+    return () => clearInterval(interval);
+  }, [settings?.nightReminderEnabled, settings?.nightReminderTime, settings?.lastReminderFiredDate]);
 
   // Theme: <html data-theme="dark"> + phone ka status bar colour
   const theme = settings.theme || 'light';
@@ -96,6 +138,7 @@ export default function App() {
   // Activeness: "kam" wale ko kam tabs (simple app)
   const layout = layoutFor(settings.activity);
   const visibleTabs = TABS.filter((x) => layout.tabs.includes(x.id));
+
   useEffect(() => {
     if (tab !== 'settings' && !layout.tabs.includes(tab)) setTab('home');
   }, [tab, layout.tabs]);
@@ -112,7 +155,7 @@ export default function App() {
     const payload = { app: 'persona', version: 1, exportedAt: new Date().toISOString(), tasks };
     const name = `persona-backup-${isoDate()}.persona.json`;
     const json = JSON.stringify(payload, null, 2);
-    // Phone pe: seedha share sheet (WhatsApp "Message yourself" / Drive) -> doosre device pe Import
+
     const file = new File([json], name, { type: 'application/json' });
     if (navigator.canShare?.({ files: [file] })) {
       try {
@@ -120,7 +163,7 @@ export default function App() {
         setToast(`${tasks.length} tasks ka backup share hua`);
         return;
       } catch (err) {
-        if (err?.name === 'AbortError') return; // user ne cancel kiya
+        if (err?.name === 'AbortError') return;
       }
     }
     downloadFile(name, json);
@@ -152,7 +195,19 @@ export default function App() {
   }
 
   const Active = tab === 'settings' ? null : (TABS.find((x) => x.id === tab) || TABS[0]).component;
-  const shared = { tasks, setTasks, day, setDay, settings, setSettings, notify: setToast, goTo, t, layout };
+  const shared = {
+    tasks,
+    setTasks,
+    day,
+    setDay,
+    settings,
+    setSettings,
+    notify: setToast,
+    goTo,
+    t,
+    layout,
+    triggerTestReminder: triggerReminderAlert,
+  };
 
   // App lock: sabse pehle PIN
   if (lockOn && locked) {
@@ -168,7 +223,7 @@ export default function App() {
     );
   }
 
-  // Pehli baar: setup screens (bhasha, naam, umar/gender, activeness)
+  // Pehli baar: setup screens
   if (!settings.onboarded) {
     return (
       <Onboarding
@@ -180,6 +235,64 @@ export default function App() {
 
   return (
     <div className="app">
+      {/* Floating Night Reminder Banner when alert triggers */}
+      {reminderAlert && (
+        <aside style={{
+          position: 'sticky',
+          top: 8,
+          zIndex: 999,
+          background: 'var(--grad-main)',
+          color: '#fff',
+          padding: '12px 16px',
+          borderRadius: 14,
+          boxShadow: '0 8px 24px rgba(99, 102, 241, 0.4)',
+          marginBottom: 12,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 10,
+          animation: 'rise 0.3s ease both',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: '1.4rem' }}>🌙</span>
+            <div>
+              <strong style={{ fontSize: '0.95rem', display: 'block' }}>
+                Raat Ki Planning Ka Time Ho Gaya!
+              </strong>
+              <small style={{ opacity: 0.9 }}>{reminderAlert.message}</small>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            <button
+              type="button"
+              className="chip"
+              style={{
+                background: '#fff',
+                color: 'var(--accent)',
+                fontWeight: 700,
+                fontSize: '0.8rem',
+                padding: '4px 10px',
+              }}
+              onClick={() => {
+                setReminderAlert(null);
+                goTo('plan');
+              }}
+            >
+              Kal Ka Plan Karein →
+            </button>
+            <button
+              type="button"
+              className="icon-btn"
+              style={{ color: '#fff', background: 'rgba(255,255,255,0.2)' }}
+              onClick={() => setReminderAlert(null)}
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        </aside>
+      )}
+
       <header className="top">
         <button type="button" className="brand link-reset" onClick={() => goTo('home')} aria-label="Home">
           <img src="./icon-192.png" alt="" />
@@ -223,6 +336,7 @@ export default function App() {
             onImport={importData}
             onAbout={() => { setShowAbout(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
             notify={setToast}
+            triggerTestReminder={triggerReminderAlert}
             lockSlot={(
               <LockSettings
                 t={t}
