@@ -74,7 +74,7 @@ export default function HomeView({ tasks, goTo, settings, t, layout, notify }) {
   const pct = (x) => `${Math.round(x * 100)}%`;
   const scoreShown = useCountUp(c.score);
   const streakShown = useCountUp(st.current, 600);
-  const [todayPlan, setTodayPlan] = useState(() => loadPrioritiesPlan(today));
+  const [todayPlan, setTodayPlan] = useState(() => loadPrioritiesPlan(today, tasks, settings.lang));
 
   return (
     <section aria-labelledby="home-h">
@@ -88,6 +88,8 @@ export default function HomeView({ tasks, goTo, settings, t, layout, notify }) {
         t={t}
         todayPlan={todayPlan}
         setTodayPlan={setTodayPlan}
+        tasks={tasks}
+        setTasks={setTasks}
         notify={notify}
         goToPlan={() => goTo('plan')}
         lang={settings.lang}
